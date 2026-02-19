@@ -181,8 +181,8 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
   <div class="step" id="step2">
     <div class="card">
       <div class="card-title">🔧 ご依頼内容</div>
-      <div class="field">
-        <label>対象機器</label>
+      <div class="field" id="f_equipment">
+        <label>対象機器 <span style="color:red;font-size:.8rem">※必須</span></label>
         <select id="c_equipment">
           <option value="">選択してください</option>
           <option value="ルームエアコン">ルームエアコン</option>
@@ -191,25 +191,10 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
           <option value="ガス給湯器">ガス給湯器</option>
           <option value="その他">その他</option>
         </select>
+        <div class="error-msg">対象機器を選択してください</div>
       </div>
-      <div class="field">
-        <label>メーカー</label>
-        <select id="c_maker">
-          <option value="">選択してください</option>
-          <option value="ダイキン">ダイキン</option>
-          <option value="パナソニック">パナソニック</option>
-          <option value="三菱電機">三菱電機</option>
-          <option value="日立">日立</option>
-          <option value="東芝">東芝</option>
-          <option value="富士通ゼネラル">富士通ゼネラル</option>
-          <option value="シャープ">シャープ</option>
-          <option value="コロナ">コロナ</option>
-          <option value="三菱重工">三菱重工</option>
-          <option value="その他・不明">その他・不明</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>症状（複数可）</label>
+      <div class="field" id="f_symptom">
+        <label>症状（複数可） <span style="color:red;font-size:.8rem">※必須</span></label>
         <div class="symptom-grid">
           <label class="symptom-label"><input type="checkbox" name="symptom" value="冷えない・暖まらない">冷えない<br>暖まらない</label>
           <label class="symptom-label"><input type="checkbox" name="symptom" value="水漏れしている">水漏れ<br>している</label>
@@ -218,6 +203,7 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
           <label class="symptom-label"><input type="checkbox" name="symptom" value="ランプが点滅">ランプが<br>点滅</label>
           <label class="symptom-label"><input type="checkbox" name="symptom" value="その他">その他</label>
         </div>
+        <div class="error-msg">症状を1つ以上選択してください</div>
       </div>
       <div class="field">
         <label>作業種別</label>
@@ -344,10 +330,11 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
           <div class="consent-input-box">
             <label><b>【電子交付への承諾】</b></label>
             <p style="font-size:.85rem;color:#333;margin-bottom:8px">
-              契約書面および重要事項説明書（クーリング・オフ等）を、紙媒体に代えて電磁的方法（PDFファイルのメール送信）で受け取ることに同意する場合、下記の文章を入力してください。
+              契約書面および重要事項説明書（クーリング・オフ等）を、紙媒体に代えて電磁的方法（PDFファイルのメール送信）で受け取ることに同意する場合、下の枠内の文章をコピーして入力欄に貼り付けてください。
             </p>
-            <input type="text" id="consent_text" placeholder="「契約書面等をPDFメールで受領することに同意します」と入力">
-            <div class="field-hint">※上記の文章をそのまま入力（コピー＆ペースト可）してください。</div>
+            <div style="background:#e8f2fc;border:2px solid var(--blue);border-radius:8px;padding:12px;margin-bottom:10px;font-size:.95rem;font-weight:600;color:var(--blue);user-select:all;-webkit-user-select:all;cursor:pointer" onclick="this.ownerDocument.execCommand('selectAll',false,null)">契約書面等をPDFメールで受領することに同意します</div>
+            <div style="font-size:.75rem;color:var(--text-sub);margin-bottom:8px">↑ 上の青い枠をタップして長押し → コピー → 下の欄に貼り付け</div>
+            <input type="text" id="consent_text" placeholder="ここに貼り付けてください" style="font-size:.95rem">
           </div>
 
           <!-- ③ 個人情報同意（チェックボックスでOK） -->
@@ -388,7 +375,7 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
 // ================================
 // ★ GAS WebアプリのURLをここに貼る ★
 // ================================
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGpm0_a_TTIrudeuq8NE27LVQmdYMA_zIaGG1lcNg0u-y6FsfK77A/exec';
+const GAS_API_URL = 'https://script.google.com/macros/s/ここにデプロイIDを貼る/exec';
 
 let currentStep = 1;
 let couponApplied = false;
@@ -504,6 +491,11 @@ function validateStep(step) {
     if (!document.getElementById('c_address').value.trim()) { setFieldError('f_address','住所を入力してください'); ok=false; }
     if (!document.getElementById('c_banchi').value.trim()) { setFieldError('f_banchi','番地を入力してください'); ok=false; }
   }
+  if (step === 2) {
+    ['f_equipment','f_symptom'].forEach(clearFieldError);
+    if (!document.getElementById('c_equipment').value) { setFieldError('f_equipment','対象機器を選択してください'); ok=false; }
+    if (getSymptoms().length === 0) { setFieldError('f_symptom','症状を1つ以上選択してください'); ok=false; }
+  }
   if (step === 6) {
     const a1 = document.getElementById('agree_contract').checked;
     const consentInput = document.getElementById('consent_text').value.trim();
@@ -566,7 +558,7 @@ function getFormData() {
     banchi:    document.getElementById('c_banchi').value,
     building:  document.getElementById('c_building').value,
     equipment: document.getElementById('c_equipment').value,
-    maker:     document.getElementById('c_maker').value,
+    maker:     '',
     symptoms:  getSymptoms(),
     detail:    document.getElementById('c_detail').value,
   };
@@ -591,7 +583,7 @@ function nextStep() {
       <div class="confirm-row"><span class="confirm-label">電話番号</span><span class="confirm-val">${d.tel}</span></div>
       <div class="confirm-row"><span class="confirm-label">メール</span><span class="confirm-val">${d.email}</span></div>
       <div class="confirm-row"><span class="confirm-label">住所</span><span class="confirm-val">〒${d.zip}<br>${d.address} ${d.banchi} ${d.building}</span></div>
-      <div class="confirm-row"><span class="confirm-label">機器</span><span class="confirm-val">${d.equipment || '未選択'} / ${d.maker || '未選択'}</span></div>
+      <div class="confirm-row"><span class="confirm-label">機器</span><span class="confirm-val">${d.equipment || '未選択'}</span></div>
       <div class="confirm-row"><span class="confirm-label">症状</span><span class="confirm-val">${sym}</span></div>
       <div class="confirm-row"><span class="confirm-label">作業</span><span class="confirm-val" style="color:var(--blue)">${oType} ${repairDetail} ${discountMsg}</span></div>
       <div class="confirm-row"><span class="confirm-label">支払い</span><span class="confirm-val">${pay}</span></div>
@@ -608,7 +600,7 @@ function nextStep() {
 
     if (orderType === '原因究明作業') {
       feeLabel.textContent = '故障診断費用（税込）';
-      const diagFee = equip.includes('業務用') ? 15000 : 9000;
+      const diagFee = equip.includes('業務用') ? 16500 : 9900;
       totalAmount = diagFee;
       estRows = '<tr><td style="padding:8px;border-bottom:1px solid #ddd">故障診断（' + (equip || 'ルームエアコン') + '）</td>'
         + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + diagFee.toLocaleString() + '円</td>'
