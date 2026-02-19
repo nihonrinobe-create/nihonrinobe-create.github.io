@@ -329,12 +329,15 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
           <!-- ② 電子交付の承諾（★特商法対応：文章手入力★） -->
           <div class="consent-input-box">
             <label><b>【電子交付への承諾】</b></label>
-            <p style="font-size:.85rem;color:#333;margin-bottom:8px">
-              契約書面および重要事項説明書（クーリング・オフ等）を、紙媒体に代えて電磁的方法（PDFファイルのメール送信）で受け取ることに同意する場合、下の枠内の文章をコピーして入力欄に貼り付けてください。
+            <p style="font-size:.85rem;color:#333;margin-bottom:10px">
+              契約書面等を、紙媒体に代えてPDFメールで受け取ることに同意する場合、下のボタンを押してコピーし、入力欄に貼り付けてください。
             </p>
-            <div style="background:#e8f2fc;border:2px solid var(--blue);border-radius:8px;padding:12px;margin-bottom:10px;font-size:.95rem;font-weight:600;color:var(--blue);user-select:all;-webkit-user-select:all;cursor:pointer" onclick="this.ownerDocument.execCommand('selectAll',false,null)">契約書面等をPDFメールで受領することに同意します</div>
-            <div style="font-size:.75rem;color:var(--text-sub);margin-bottom:8px">↑ 上の青い枠をタップして長押し → コピー → 下の欄に貼り付け</div>
-            <input type="text" id="consent_text" placeholder="ここに貼り付けてください" style="font-size:.95rem">
+            <div style="background:#e8f2fc;border:2px solid var(--blue);border-radius:8px;padding:14px;margin-bottom:8px;text-align:center">
+              <div style="font-size:1rem;font-weight:700;color:var(--blue);margin-bottom:10px;line-height:1.5">契約書面等をPDFメールで<br>受領することに同意します</div>
+              <button type="button" onclick="copyConsent()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:.9rem;font-weight:700;cursor:pointer" id="btn_copy_consent">📋 この文章をコピー</button>
+            </div>
+            <div style="font-size:.8rem;color:var(--text-sub);margin-bottom:8px">↓ コピーしたら下の欄に貼り付けてください</div>
+            <input type="text" id="consent_text" placeholder="ここに貼り付け" style="font-size:1rem;text-align:center">
           </div>
 
           <!-- ③ 個人情報同意（チェックボックスでOK） -->
@@ -380,6 +383,23 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGp
 let currentStep = 1;
 let couponApplied = false;
 const CONSENT_PHRASE = '契約書面等をPDFメールで受領することに同意します';
+
+// === 承諾文コピー ===
+function copyConsent() {
+  const text = CONSENT_PHRASE;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      document.getElementById('btn_copy_consent').textContent = '✅ コピーしました！';
+      setTimeout(() => { document.getElementById('btn_copy_consent').textContent = '📋 この文章をコピー'; }, 2000);
+    }).catch(() => { fallbackCopy(text); });
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  document.getElementById('btn_copy_consent').textContent = '✅ コピーしました！';
+  setTimeout(() => { document.getElementById('btn_copy_consent').textContent = '📋 この文章をコピー'; }, 2000);
+}
 
 // === URL パラメータ自動入力 ===
 window.onload = function() {
