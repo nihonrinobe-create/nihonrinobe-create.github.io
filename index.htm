@@ -3,717 +3,590 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>注文入力フォーム</title>
+<title>業務報告</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --blue: #0055a4; --blue-dark: #003d7a; --blue-light: #e8f2fc;
-  --green: #2e7d32; --red: #c62828; --bg: #f5f7fa; --card: #ffffff;
-  --text: #1a1a1a; --text-sub: #5f6368; --border: #dce1e8;
-  --radius: 14px; --orange-bg: #fff3e0; --orange-border: #ffcc80;
+  --blue:#0055a4; --blue-dark:#003d7a; --blue-light:#e8f2fc;
+  --green:#2e7d32; --green-light:#e8f5e9; --red:#c62828;
+  --bg:#f5f7fa; --card:#fff; --text:#1a1a1a; --text-sub:#5f6368;
+  --border:#dce1e8; --radius:14px;
+  --orange:#e65100; --orange-bg:#fff3e0;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; padding-bottom:80px; }
-.hero { background:linear-gradient(160deg,var(--blue),var(--blue-dark)); color:#fff; padding:30px 20px; text-align:center; }
-.hero h1 { font-size:1.6rem; font-weight:700; }
-.progress-bar { display:flex; gap:5px; padding:15px 20px; max-width:500px; margin:0 auto; }
-.progress-step { flex:1; height:4px; background:var(--border); border-radius:2px; }
-.progress-step.active { background:var(--blue); }
-.progress-step.done { background:var(--green); }
-.container { max-width:500px; margin:0 auto; padding:0 20px; }
-.step { display:none; animation:fadeIn .3s ease; }
-.step.active { display:block; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-.card { background:var(--card); border-radius:var(--radius); box-shadow:0 2px 8px rgba(0,0,0,.06); padding:20px; margin-bottom:15px; border:1px solid var(--border); }
-.card-title { font-weight:700; color:var(--blue); margin-bottom:15px; display:flex; align-items:center; gap:8px; }
-.field { margin-bottom:18px; }
-.field label { display:block; font-weight:600; font-size:.9rem; margin-bottom:6px; }
-.field input, .field select, .field textarea { width:100%; padding:12px; border:2px solid var(--border); border-radius:10px; font-size:1rem; -webkit-appearance:none; background:#fff; }
-.field-hint { font-size:.75rem; color:var(--text-sub); margin-top:5px; }
-.error-msg { color:var(--red); font-size:.8rem; display:none; margin-top:5px; }
-.field.error input, .field.error select, .field.error textarea { border-color:var(--red); background:#fff8f8; }
-.field.error .error-msg { display:block; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:100px}
+.hero{background:linear-gradient(160deg,var(--green),#1b5e20);color:#fff;padding:24px 20px;text-align:center}
+.hero h1{font-size:1.4rem;font-weight:700}
+.hero .case-info{font-size:.9rem;opacity:.9;margin-top:6px}
+.container{max-width:500px;margin:0 auto;padding:15px 20px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 2px 8px rgba(0,0,0,.06);padding:18px;margin-bottom:14px;border:1px solid var(--border)}
+.card-title{font-weight:700;color:var(--blue);margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:1rem}
+.section-title{font-weight:700;font-size:.95rem;margin:16px 0 10px;padding:8px 12px;background:var(--blue-light);border-radius:8px;color:var(--blue)}
 
-.system-fields { background:#f0f4f8; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #dce1e8; }
-.case-id-group { display:flex; gap:8px; }
-.case-id-group select { width:35%; background:#fff; }
-.case-id-group input { width:65%; }
+/* 契約状況グリッド */
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.status-label{border:2px solid var(--border);border-radius:10px;padding:14px 8px;text-align:center;font-size:.9rem;font-weight:700;cursor:pointer;background:#fff;transition:all .2s}
+.status-label input{display:none}
+.status-label .icon{font-size:1.3rem;display:block;margin-bottom:4px}
+.status-label:has(input:checked){border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
+.status-label.loss:has(input:checked){border-color:var(--red);background:#ffebee;color:var(--red)}
+.status-label.cancel:has(input:checked){border-color:#666;background:#eee;color:#333}
+.status-label.reserve:has(input:checked){border-color:var(--orange);background:var(--orange-bg);color:var(--orange)}
 
-.symptom-grid, .order-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.payment-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; }
-.symptom-label, .order-type-label, .payment-label {
-  border:2px solid var(--border); border-radius:10px; padding:12px 5px; text-align:center;
-  font-size:.9rem; font-weight:600; cursor:pointer; background:#fff; transition:all .2s;
-  display:flex; align-items:center; justify-content:center; min-height:50px;
-}
-.symptom-label input, .order-type-label input, .payment-label input { display:none; }
-.symptom-label:has(input:checked), .order-type-label:has(input:checked), .payment-label:has(input:checked) {
-  border-color:var(--blue); background:var(--blue-light); color:var(--blue);
-}
+/* 修理メニュー */
+.repair-item{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+.repair-item.active{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue) inset}
+.repair-name{font-size:.9rem;font-weight:500;flex:1}
+.repair-price-tag{font-size:.8rem;color:var(--text-sub);display:block}
+.counter{display:flex;align-items:center;gap:8px}
+.counter button{width:30px;height:30px;border-radius:50%;border:none;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.counter .minus{background:#eee;color:#555}
+.counter .plus{background:var(--blue);color:#fff}
+.counter .num{font-weight:700;width:20px;text-align:center}
 
-#repair_options_area { margin-top:15px; padding:15px; background:var(--blue-light); border-radius:10px; display:none; }
-.repair-item-row { display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px; }
-.repair-item-row.active { border-color:var(--blue); box-shadow:0 0 0 1px var(--blue) inset; }
-.repair-info { font-size:.9rem; font-weight:500; flex:1; padding-right:10px; }
-.repair-price { font-size:.8rem; color:var(--text-sub); display:block; }
-.counter-ui { display:flex; align-items:center; gap:10px; }
-.btn-circle { width:32px; height:32px; border-radius:50%; border:none; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; background:#eee; color:#555; }
-.btn-plus { background:var(--blue); color:#fff; }
-.count-num { font-weight:700; width:24px; text-align:center; }
+/* 合計エリア */
+.total-box{background:var(--green-light);border:2px solid var(--green);border-radius:12px;padding:16px;text-align:center;margin:12px 0}
+.total-label{font-size:.9rem;color:var(--green);font-weight:600}
+.total-amount{font-size:1.8rem;font-weight:800;color:var(--green)}
 
-.discount-box { margin-top:20px; padding:15px; background:var(--orange-bg); border:1px solid var(--orange-border); border-radius:10px; }
-.btn-apply { background:#e65100; color:#fff; border:none; padding:0 15px; border-radius:8px; font-weight:bold; cursor:pointer; }
-.coupon-success { color:var(--green); font-weight:bold; }
-.coupon-error { color:var(--red); font-weight:bold; }
+/* 見積りトグル */
+.toggle-box{background:var(--orange-bg);border:1px solid #ffcc80;border-radius:10px;padding:14px;margin:14px 0}
+.toggle-label{display:flex;gap:10px;align-items:center;cursor:pointer;font-weight:700;color:var(--orange)}
+.toggle-label input{transform:scale(1.3)}
+#estimate_area{display:none;margin-top:12px}
+.estimate-total-box{background:#fff3e0;border:2px solid var(--orange);border-radius:12px;padding:16px;text-align:center;margin:12px 0}
+.estimate-total-label{font-size:.9rem;color:var(--orange);font-weight:600}
+.estimate-total-amount{font-size:1.6rem;font-weight:800;color:var(--orange)}
 
-.emergency-box { margin-top:20px; padding-top:15px; border-top:2px dashed #ddd; }
-.emergency-label { display:flex; gap:10px; align-items:center; cursor:pointer; background:#fff5f5; padding:12px; border:1px solid #ffcccc; border-radius:8px; }
-.emergency-label input { transform:scale(1.3); }
-.emergency-label span { color:var(--red); font-weight:700; }
+/* 支払い */
+.pay-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0}
+.pay-label{border:2px solid var(--border);border-radius:10px;padding:10px 5px;text-align:center;font-size:.9rem;font-weight:600;cursor:pointer;background:#fff}
+.pay-label input{display:none}
+.pay-label:has(input:checked){border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
 
-.agreement-box { background:#f9f9f9; padding:15px; border-radius:10px; border:1px solid #eee; margin-top:20px; }
-.checkbox-group label { display:flex; gap:10px; align-items:flex-start; cursor:pointer; margin-bottom:12px; font-size:.9rem; padding:10px; border:1px solid var(--border); border-radius:8px; background:#fff; }
-.checkbox-group input[type="checkbox"] { margin-top:4px; transform:scale(1.2); flex-shrink:0; }
+/* ボタン */
+.btn-submit{display:block;width:100%;padding:16px;border-radius:12px;border:none;font-size:1.1rem;font-weight:700;cursor:pointer;margin-top:12px}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-loss{background:var(--red);color:#fff}
+.btn-cancel{background:#666;color:#fff}
+.btn-reserve{background:var(--orange);color:#fff}
 
-.consent-input-box { padding:10px; border:1px solid var(--border); border-radius:8px; background:#fff; margin-bottom:12px; }
-.consent-input-box label { font-weight:600; font-size:.9rem; margin-bottom:8px; display:block; }
-.consent-input-box input[type="text"] { width:100%; padding:10px; border:2px solid var(--border); border-radius:8px; font-size:.95rem; }
-.consent-input-box .field-hint { font-size:.75rem; color:var(--text-sub); margin-top:5px; }
+/* 後日ドキュメント発行 */
+.doc-section{margin-top:20px}
+.doc-btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.doc-btn{padding:12px;border-radius:10px;border:2px solid var(--border);background:#fff;font-weight:700;font-size:.85rem;cursor:pointer;text-align:center}
+.doc-btn:hover{border-color:var(--blue);background:var(--blue-light)}
+.doc-btn.done{border-color:var(--green);background:var(--green-light);color:var(--green)}
 
-.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#fff; padding:15px 20px; display:flex; gap:10px; justify-content:center; box-shadow:0 -2px 10px rgba(0,0,0,.05); z-index:100; }
-.btn { padding:12px 24px; border-radius:10px; font-weight:700; border:none; cursor:pointer; flex:1; max-width:200px; text-align:center; }
-.btn-next { background:var(--blue); color:#fff; }
-.btn-back { background:#eee; color:#555; }
-.btn:disabled { opacity:.6; cursor:not-allowed; }
+.field{margin-bottom:14px}
+.field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:5px}
+.field input,.field textarea,.field select{width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem;background:#fff}
+.field-hint{font-size:.75rem;color:var(--text-sub);margin-top:4px}
+.field-required{color:var(--red);font-size:.8rem}
+.complete-msg{text-align:center;padding:30px 20px;font-size:1.1rem}
+.hidden{display:none}
 
-.confirm-row { display:flex; border-bottom:1px solid #eee; padding:8px 0; font-size:.95rem; }
-.confirm-label { width:100px; color:var(--text-sub); flex-shrink:0; }
-.confirm-val { flex:1; font-weight:600; }
-
-.complete-screen { text-align:center; padding:40px 20px; }
-.complete-icon { font-size:3rem; margin-bottom:15px; }
+/* 失注・キャンセル時のメッセージ */
+.status-notice{padding:16px;border-radius:10px;margin:14px 0;text-align:center;font-weight:600;font-size:.95rem}
+.status-notice.loss-notice{background:#ffebee;border:2px solid var(--red);color:var(--red)}
+.status-notice.cancel-notice{background:#eee;border:2px solid #999;color:#555}
+.status-notice.reserve-notice{background:var(--orange-bg);border:2px solid var(--orange);color:var(--orange)}
 </style>
 </head>
 <body>
 
 <div class="hero">
-  <h1>注文入力フォーム</h1>
-</div>
-
-<div class="progress-bar">
-  <div class="progress-step active" id="p1"></div>
-  <div class="progress-step" id="p2"></div>
-  <div class="progress-step" id="p3"></div>
-  <div class="progress-step" id="p4"></div>
-  <div class="progress-step" id="p5"></div>
-  <div class="progress-step" id="p6"></div>
-  <div class="progress-step" id="p7"></div>
+  <h1>📋 業務報告</h1>
+  <div class="case-info">
+    案件番号: <span id="h_case_id">---</span> ／ <span id="h_name">---</span> 様
+  </div>
 </div>
 
 <div class="container">
 
-  <!-- ===== STEP 1: 顧客情報 ===== -->
-  <div class="step active" id="step1">
-    <div class="card">
-      <div class="card-title">📋 管理情報</div>
-      <div class="system-fields">
-        <div class="field">
-          <label>案件ID</label>
-          <div class="case-id-group">
-            <select id="c_case_prefix">
-              <option value="AC">AC</option>
-              <option value="HM">HM</option>
-              <option value="CP">CP</option>
-            </select>
-            <input type="text" id="c_case_num" placeholder="例: 20260212-001">
-          </div>
-        </div>
-        <div class="field">
-          <label>担当者ID</label>
-          <input type="text" id="c_emp_id" placeholder="例: T001">
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">👤 お客様情報</div>
-      <div class="field" id="f_name">
-        <label>お名前 <span style="color:red;font-size:.8rem">※必須</span></label>
-        <input type="text" id="c_name" placeholder="例：山田太郎">
-        <div class="error-msg">お名前を入力してください</div>
-      </div>
-      <div class="field" id="f_kana">
-        <label>ふりがな</label>
-        <input type="text" id="c_kana" placeholder="例：やまだたろう">
-        <div class="error-msg">ふりがなを入力してください</div>
-      </div>
-      <div class="field" id="f_tel">
-        <label>電話番号 <span style="color:red;font-size:.8rem">※必須</span></label>
-        <input type="tel" id="c_tel" inputmode="tel" placeholder="例：09012345678">
-        <div class="error-msg">電話番号を入力してください</div>
-      </div>
-      <div class="field" id="f_email">
-        <label>メールアドレス <span style="color:red;font-size:.8rem">※必須</span></label>
-        <input type="email" id="c_email" inputmode="email" placeholder="例：yamada@example.com">
-        <div class="error-msg">正しいメールアドレスを入力してください</div>
-      </div>
-      <div class="field" id="f_zip">
-        <label>郵便番号</label>
-        <input type="text" id="c_zip" inputmode="numeric" maxlength="7" placeholder="例：1730001" oninput="autoFillAddress(this.value)">
-      </div>
-      <div class="field" id="f_address">
-        <label>住所（番地以外）</label>
-        <input type="text" id="c_address" placeholder="自動入力 or 手入力">
-        <div class="error-msg">住所を入力してください</div>
-      </div>
-      <div class="field" id="f_banchi">
-        <label>番地 <span style="color:red;font-size:.8rem">※必須</span></label>
-        <input type="text" id="c_banchi" placeholder="例：1-2-3">
-        <div class="error-msg">番地を入力してください</div>
-      </div>
-      <div class="field" id="f_building">
-        <label>建物名・部屋番号</label>
-        <input type="text" id="c_building" placeholder="例：○○マンション 101">
-      </div>
-    </div>
-  </div>
+  <!-- ===== メイン画面 ===== -->
+  <div id="main_view">
 
-  <!-- ===== STEP 2: 依頼内容 ===== -->
-  <div class="step" id="step2">
+    <!-- 担当者番号 -->
     <div class="card">
-      <div class="card-title">🔧 ご依頼内容</div>
-      <div class="field" id="f_equipment">
-        <label>対象機器 <span style="color:red;font-size:.8rem">※必須</span></label>
-        <select id="c_equipment">
-          <option value="">選択してください</option>
-          <option value="ルームエアコン">ルームエアコン</option>
-          <option value="業務用エアコン">業務用エアコン</option>
-          <option value="エコキュート">エコキュート</option>
-          <option value="ガス給湯器">ガス給湯器</option>
-          <option value="その他">その他</option>
-        </select>
-        <div class="error-msg">対象機器を選択してください</div>
-      </div>
-      <div class="field" id="f_symptom">
-        <label>症状（複数可） <span style="color:red;font-size:.8rem">※必須</span></label>
-        <div class="symptom-grid">
-          <label class="symptom-label"><input type="checkbox" name="symptom" value="冷えない・暖まらない">冷えない<br>暖まらない</label>
-          <label class="symptom-label"><input type="checkbox" name="symptom" value="水漏れしている">水漏れ<br>している</label>
-          <label class="symptom-label"><input type="checkbox" name="symptom" value="電源が入らない">電源が<br>入らない</label>
-          <label class="symptom-label"><input type="checkbox" name="symptom" value="異音・においがする">異音・におい<br>がする</label>
-          <label class="symptom-label"><input type="checkbox" name="symptom" value="ランプが点滅">ランプが<br>点滅</label>
-          <label class="symptom-label"><input type="checkbox" name="symptom" value="その他">その他</label>
-        </div>
-        <div class="error-msg">症状を1つ以上選択してください</div>
+      <div class="card-title">👤 報告者情報</div>
+      <div class="field">
+        <label>担当者番号 <span class="field-required">※必須</span></label>
+        <input type="text" id="staff_id" placeholder="例：0001" inputmode="numeric">
       </div>
       <div class="field">
-        <label>作業種別</label>
-        <div class="order-type-grid">
-          <label class="order-type-label"><input type="radio" name="order_type" value="原因究明作業" checked>原因究明作業</label>
-          <label class="order-type-label"><input type="radio" name="order_type" value="修理" onclick="toggleRepairMenu()">修理</label>
-        </div>
-        <div id="repair_options_area">
-          <div class="repair-item-row" data-price="29700" data-name="冷媒ガス注入"><div class="repair-info">冷媒ガス注入（500gまで）<span class="repair-price">29,700円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-          <div class="repair-item-row" data-price="3300" data-name="冷媒ガス追加（100g）"><div class="repair-info">冷媒ガス追加（100g）<span class="repair-price">3,300円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-          <div class="repair-item-row" data-price="17600" data-name="真空引き"><div class="repair-info">真空引き<span class="repair-price">17,600円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-          <div class="repair-item-row" data-price="17600" data-name="フレア加工・バルブコア交換"><div class="repair-info">フレア加工・バルブコア交換<span class="repair-price">17,600円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-          <div class="repair-item-row" data-price="28600" data-name="水漏れ修復"><div class="repair-info">水漏れ修復<span class="repair-price">28,600円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-          <div class="repair-item-row" data-price="26400" data-name="四方弁動作不良解消"><div class="repair-info">四方弁動作不良解消<span class="repair-price">26,400円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-          <div class="repair-item-row" data-price="26400" data-name="電源部再接続"><div class="repair-info">電源部再接続<span class="repair-price">26,400円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-          <div class="repair-item-row" data-price="28600" data-name="エアコン標準取付"><div class="repair-info">エアコン標準取付<span class="repair-price">28,600円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-          <div class="repair-item-row" data-price="8800" data-name="エアコン取り外し"><div class="repair-info">エアコン取り外し<span class="repair-price">8,800円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-          <div class="repair-item-row" data-price="26400" data-name="穴開け工事"><div class="repair-info">穴開け工事<span class="repair-price">26,400円〜</span></div><div class="counter-ui"><button class="btn-circle btn-minus" onclick="changeCount(this,-1)">-</button><span class="count-num">0</span><button class="btn-circle btn-plus" onclick="changeCount(this,1)">+</button></div></div>
-        </div>
-      </div>
-      <div class="field">
-        <label>詳細・補足</label>
-        <textarea id="c_detail" rows="3" placeholder="型番・エラーコード・その他ご要望など"></textarea>
+        <label>訪問日</label>
+        <input type="date" id="visit_date">
       </div>
     </div>
-  </div>
 
-  <!-- ===== STEP 3: 料金・支払い ===== -->
-  <div class="step" id="step3">
+    <!-- 契約状況 -->
+    <div class="section-title">📊 契約状況</div>
     <div class="card">
-      <div class="card-title">💰 料金・お支払い</div>
-      <div class="discount-box">
-        <label style="font-weight:600;font-size:.9rem">クーポンコード / 紹介コード</label>
-        <div style="display:flex;gap:10px;margin-top:5px">
-          <input type="text" id="c_coupon_code" placeholder="コードを入力" style="flex:1">
-          <button type="button" class="btn-apply" onclick="applyCoupon()">適用</button>
-        </div>
-        <div id="coupon_result" style="font-size:.85rem;margin-top:5px;font-weight:bold"></div>
-      </div>
-      <div class="field" style="margin-top:20px">
-        <label>お支払い方法</label>
-        <div class="payment-grid">
-          <label class="payment-label"><input type="radio" name="payment_method" value="現金" checked>現金</label>
-          <label class="payment-label"><input type="radio" name="payment_method" value="クレジットカード">クレジットカード</label>
-          <label class="payment-label"><input type="radio" name="payment_method" value="ご相談">ご相談</label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== STEP 4: 確認 ===== -->
-  <div class="step" id="step4">
-    <div class="card">
-      <div class="card-title">✅ 入力内容の確認</div>
-      <div id="confirmContent"></div>
-    </div>
-  </div>
-
-  <!-- ===== STEP 5: 見積書 ===== -->
-  <div class="step" id="step5">
-    <div class="card">
-      <div class="card-title">📄 お見積り内容</div>
-      <div style="background:#f0f7ff;border:2px solid var(--blue);border-radius:10px;padding:20px;margin-bottom:15px">
-        <div style="text-align:center;font-size:1.1rem;font-weight:bold;color:var(--blue);margin-bottom:15px">御 見 積 書</div>
-        <div id="est_customer_name" style="font-size:.95rem;margin-bottom:10px"></div>
-        <div id="est_date" style="font-size:.85rem;color:#666;margin-bottom:15px"></div>
-        <table style="width:100%;border-collapse:collapse;font-size:.9rem">
-          <thead>
-            <tr style="background:var(--blue);color:#fff">
-              <th style="padding:8px;text-align:left;border-radius:4px 0 0 0">項目</th>
-              <th style="padding:8px;text-align:right;width:70px">単価</th>
-              <th style="padding:8px;text-align:center;width:40px">数</th>
-              <th style="padding:8px;text-align:right;border-radius:0 4px 0 0;width:80px">小計</th>
-            </tr>
-          </thead>
-          <tbody id="est_items_body"></tbody>
-        </table>
-        <div style="margin-top:15px;padding:15px;background:#fff;border-radius:8px;border:2px solid var(--blue)">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:1rem;font-weight:bold">合計金額（税込）</span>
-            <span id="est_total" style="font-size:1.5rem;font-weight:bold;color:var(--blue)"></span>
-          </div>
-        </div>
-      </div>
-      <div style="font-size:.85rem;color:#666">
-        <p>※上記は概算のお見積りです。現地の状況により金額が変更になる場合があります。</p>
-        <p>※追加作業が必要な場合は、別途お見積り・同意の上で実施します。</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== STEP 6: 契約・同意 ===== -->
-  <div class="step" id="step6">
-    <div class="card">
-      <div class="card-title">🧾 契約・同意 <span style="color:var(--red)">(重要)</span></div>
-
-      <div class="field" style="background:#f9f9f9;padding:15px;border-radius:8px">
-        <label id="fee_label">費用（税込）</label>
-        <input type="text" id="fee_diagnosis" readonly style="font-weight:bold;color:var(--blue);font-size:1.2rem;background:#fff;border:none">
-        <div class="field-hint">※現地で追加作業が必要な場合は、別途お見積り・同意の上で実施します。</div>
-      </div>
-
-      <div class="field">
-        <label>キャンセル規定</label>
-        <textarea id="cancel_rule" readonly style="height:60px;font-size:.85rem;background:#eee">当日・出発後のキャンセルは費用の100%を申し受けます。</textarea>
-      </div>
-
-      <div class="emergency-box">
-        <label class="emergency-label">
-          <input type="checkbox" id="req_sameday">
-          <span>緊急事態につき当日の工事を希望します</span>
+      <div class="status-grid">
+        <label class="status-label" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="完工" checked>
+          <span class="icon">✅</span>完工
+        </label>
+        <label class="status-label loss" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="失注">
+          <span class="icon">❌</span>失注
+        </label>
+        <label class="status-label reserve" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="予約（見積あり）">
+          <span class="icon">📄</span>予約<br><small>見積あり</small>
+        </label>
+        <label class="status-label reserve" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="予約（見積なし）">
+          <span class="icon">📅</span>予約<br><small>見積なし</small>
+        </label>
+        <label class="status-label cancel" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="キャンセル">
+          <span class="icon">🚫</span>キャンセル
         </label>
       </div>
+    </div>
 
-      <div class="agreement-box">
-        <div class="checkbox-group">
-          <!-- ① 契約同意（チェックボックスでOK） -->
-          <label>
-            <input type="checkbox" id="agree_contract">
-            <span>上記金額およびキャンセル規定に同意して申し込みます。</span>
-          </label>
+    <!-- 失注・キャンセル時の通知 -->
+    <div id="notice_loss" class="status-notice loss-notice hidden">
+      売上 ¥0 で報告します（広告費は記録されます）
+    </div>
+    <div id="notice_cancel" class="status-notice cancel-notice hidden">
+      キャンセルとして報告します（広告費は記録されます）
+    </div>
+    <div id="notice_reserve_est" class="status-notice reserve-notice hidden">
+      予約として記録し、見積書をメールで送付します
+    </div>
+    <div id="notice_reserve_no" class="status-notice reserve-notice hidden">
+      予約として記録します（後追いアラート対象になります）
+    </div>
 
-          <!-- ② 電子交付の承諾（★特商法対応：文章手入力★） -->
-          <div class="consent-input-box">
-            <label><b>【電子交付への承諾】</b></label>
-            <p style="font-size:.85rem;color:#333;margin-bottom:10px">
-              契約書面等を、紙媒体に代えてPDFメールで受け取ることに同意する場合、下のボタンを押してコピーし、入力欄に貼り付けてください。
-            </p>
-            <div style="background:#e8f2fc;border:2px solid var(--blue);border-radius:8px;padding:14px;margin-bottom:8px;text-align:center">
-              <div style="font-size:1rem;font-weight:700;color:var(--blue);margin-bottom:10px;line-height:1.5">契約書面等をPDFメールで<br>受領することに同意します</div>
-              <button type="button" onclick="copyConsent()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:.9rem;font-weight:700;cursor:pointer" id="btn_copy_consent">📋 この文章をコピー</button>
-            </div>
-            <div style="font-size:.8rem;color:var(--text-sub);margin-bottom:8px">↓ コピーしたら下の欄に貼り付けてください</div>
-            <input type="text" id="consent_text" placeholder="ここに貼り付け" style="font-size:1rem;text-align:center">
-          </div>
+    <!-- ===== 完工セクション ===== -->
+    <div id="section_kankou">
 
-          <!-- ③ 個人情報同意（チェックボックスでOK） -->
-          <label>
-            <input type="checkbox" id="agree_privacy">
-            <span>プライバシーポリシーに同意します（業務委託先への共有を含む）。</span>
-          </label>
-        </div>
-
-        <div class="field" style="margin-top:20px">
-          <label>ご署名（お名前を入力）<span style="color:red;font-size:.8rem">※必須</span></label>
-          <input type="text" id="c_signature" placeholder="例：山田太郎">
-          <div class="field-hint">契約の証として、ご本人様のお名前を入力してください。</div>
+      <!-- 今日の作業 -->
+      <div class="section-title">💰 今日の費用</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee">
+          <span style="font-weight:600">故障診断費</span>
+          <span style="font-weight:700;color:var(--blue)" id="diag_fee_display">¥9,000</span>
         </div>
       </div>
 
-      <div class="error-msg" id="agree_error" style="margin-top:10px">すべての同意事項を満たし、ご署名を入力してください</div>
+      <div class="section-title">🔧 今日やった追加作業</div>
+      <div class="card" id="today_repairs">
+        <!-- JSで生成 -->
+      </div>
+
+      <div class="total-box">
+        <div class="total-label">今日のお支払い合計（税込）</div>
+        <div class="total-amount" id="today_total">¥9,000</div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label>お支払い方法</label>
+          <div class="pay-grid">
+            <label class="pay-label"><input type="radio" name="payment" value="現金" checked>現金</label>
+            <label class="pay-label"><input type="radio" name="payment" value="カード">カード</label>
+            <label class="pay-label"><input type="radio" name="payment" value="後日請求">後日請求</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 後日見積り（完工時にも使える） -->
+      <div class="toggle-box" id="toggle_estimate_box">
+        <label class="toggle-label">
+          <input type="checkbox" id="chk_estimate" onchange="toggleEstimate()">
+          <span>後日分の見積書も作成する</span>
+        </label>
+        <div id="estimate_area">
+          <div class="field" style="margin-top:10px">
+            <label>見積り有効期限</label>
+            <input type="date" id="est_expiry">
+          </div>
+          <div class="field">
+            <label>見積り備考</label>
+            <textarea id="est_note" rows="2" placeholder="例：室外機の基板交換が必要。部品取寄せ1週間。"></textarea>
+          </div>
+          <div id="estimate_repairs">
+            <!-- JSで生成 -->
+          </div>
+          <div class="estimate-total-box">
+            <div class="estimate-total-label">見積り合計（税込）</div>
+            <div class="estimate-total-amount" id="est_total">¥0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 予約（見積あり）セクション ===== -->
+    <div id="section_reserve_est" class="hidden">
+      <div class="section-title">📄 見積書の作成</div>
+      <div class="card">
+        <div class="field">
+          <label>見積り有効期限</label>
+          <input type="date" id="res_est_expiry">
+        </div>
+        <div class="field">
+          <label>見積り備考</label>
+          <textarea id="res_est_note" rows="2" placeholder="例：室外機の基板交換が必要。部品取寄せ1週間。"></textarea>
+        </div>
+      </div>
+      <div id="reserve_est_repairs">
+        <!-- JSで生成 -->
+      </div>
+      <div class="estimate-total-box">
+        <div class="estimate-total-label">見積り合計（税込）</div>
+        <div class="estimate-total-amount" id="res_est_total">¥0</div>
+      </div>
+    </div>
+
+    <!-- 失注・キャンセル理由 -->
+    <div id="section_reason" class="hidden">
+      <div class="card">
+        <div class="field">
+          <label>理由・備考</label>
+          <textarea id="loss_reason" rows="3" placeholder="失注・キャンセルの理由を入力"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 共通メモ -->
+    <div class="card">
+      <div class="field">
+        <label>担当者メモ（社内用）</label>
+        <textarea id="staff_memo" rows="2" placeholder="現場の状況・お客様への説明内容など"></textarea>
+      </div>
+    </div>
+
+    <!-- 送信ボタン -->
+    <button class="btn-submit btn-primary" id="btn_submit" onclick="submitReport()">
+      報告を送信
+    </button>
+    <div class="field-hint" style="text-align:center;margin-top:8px" id="submit_hint">
+      ※送信後、売上管理シートに自動記録されます
     </div>
   </div>
 
-  <!-- ===== STEP 7: 完了 ===== -->
-  <div class="step" id="step7">
-    <div class="complete-screen">
-      <div class="complete-icon">🎉</div>
-      <h2>受付完了しました</h2>
-      <p>ご登録のメールアドレスに「契約書控え（PDF）」をお送りしました。<br>担当者よりご連絡いたします。</p>
+  <!-- ===== 送信完了画面 ===== -->
+  <div id="done_view" class="hidden">
+    <div class="complete-msg" id="done_msg">
+      ✅ 報告を送信しました
+    </div>
+
+    <!-- 後日ドキュメント発行 -->
+    <div class="doc-section" id="doc_section">
+      <div class="section-title">📄 書類発行（後日用）</div>
+      <div class="card">
+        <p style="font-size:.85rem;color:var(--text-sub);margin-bottom:10px">
+          見積りが承認されたら、ここから請求書・領収書を発行できます。
+        </p>
+        <div class="doc-btn-grid">
+          <button class="doc-btn" id="btn_invoice" onclick="generateDoc('invoice')">
+            📑 請求書を発行
+          </button>
+          <button class="doc-btn" id="btn_receipt" onclick="generateDoc('receipt')">
+            🧾 領収書を発行
+          </button>
+        </div>
+        <div class="field-hint" style="margin-top:10px">
+          ※請求書・領収書は発行ボタンを押すとお客様のメールに送信されます。
+        </div>
+        <div id="doc_result" style="margin-top:10px;font-weight:700"></div>
+      </div>
     </div>
   </div>
 
-</div>
-
-<div class="bottom-nav">
-  <button class="btn btn-back" onclick="prevStep()" id="btnBack" style="display:none">戻る</button>
-  <button class="btn btn-next" onclick="nextStep()" id="btnNext">次へ</button>
 </div>
 
 <script>
 // ================================
 // ★ GAS WebアプリのURLをここに貼る ★
 // ================================
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGpm0_a_TTIrudeuq8NE27LVQmdYMA_zIaGG1lcNg0u-y6FsfK77A/exec';
+const GAS_API_URL = 'https://script.google.com/macros/s/ここにデプロイIDを貼る/exec';
 
-let currentStep = 1;
-let couponApplied = false;
-const CONSENT_PHRASE = '契約書面等をPDFメールで受領することに同意します';
+// === 修理メニュー定義 ===
+const REPAIR_MENU = [
+  { name: '冷媒ガス注入（500gまで）', price: 29700 },
+  { name: '冷媒ガス追加（100g）', price: 3300 },
+  { name: '真空引き', price: 17600 },
+  { name: 'フレア加工・バルブコア交換', price: 17600 },
+  { name: '水漏れ修復', price: 28600 },
+  { name: '四方弁動作不良解消', price: 26400 },
+  { name: '電源部再接続', price: 26400 },
+  { name: 'エアコン標準取付', price: 28600 },
+  { name: 'エアコン取り外し', price: 8800 },
+  { name: '穴開け工事', price: 26400 },
+];
 
-// === 承諾文コピー ===
-function copyConsent() {
-  const text = CONSENT_PHRASE;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => {
-      document.getElementById('btn_copy_consent').textContent = '✅ コピーしました！';
-      setTimeout(() => { document.getElementById('btn_copy_consent').textContent = '📋 この文章をコピー'; }, 2000);
-    }).catch(() => { fallbackCopy(text); });
-  } else { fallbackCopy(text); }
-}
-function fallbackCopy(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-  document.getElementById('btn_copy_consent').textContent = '✅ コピーしました！';
-  setTimeout(() => { document.getElementById('btn_copy_consent').textContent = '📋 この文章をコピー'; }, 2000);
-}
-
-// === URL パラメータ自動入力 ===
-window.onload = function() {
-  const p = new URLSearchParams(location.search);
-  if (p.get('case_id')) {
-    const parts = p.get('case_id').split('-');
-    if (parts.length > 1 && ['AC','HM','CP'].includes(parts[0])) {
-      document.getElementById('c_case_prefix').value = parts[0];
-      document.getElementById('c_case_num').value = parts.slice(1).join('-');
-    } else {
-      document.getElementById('c_case_num').value = p.get('case_id');
-    }
-  }
-  if (p.get('emp_id'))  document.getElementById('c_emp_id').value = p.get('emp_id');
-  if (p.get('name'))    document.getElementById('c_name').value = p.get('name');
-  if (p.get('tel'))     document.getElementById('c_tel').value = p.get('tel');
-  if (p.get('email'))   document.getElementById('c_email').value = p.get('email');
-  if (p.get('address')) document.getElementById('c_address').value = p.get('address');
-  toggleRepairMenu();
+// === URLパラメータから情報取得 ===
+const params = new URLSearchParams(location.search);
+const P = {
+  case_id:     params.get('case_id') || '',
+  name:        params.get('name') || '',
+  email:       params.get('email') || '',
+  tel:         params.get('tel') || '',
+  address:     params.get('address') || '',
+  initial_fee: parseInt(params.get('initial_fee')) || 9000,
+  equipment:   params.get('equipment') || '',
+  staff_id:    params.get('staff_id') || '',
 };
 
-// === 郵便番号→住所自動入力（ZipCloud API） ===
-function autoFillAddress(zip) {
-  if (zip.length !== 7) return;
-  fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode=' + zip)
-    .then(r => r.json())
-    .then(data => {
-      if (data.results && data.results[0]) {
-        const r = data.results[0];
-        document.getElementById('c_address').value = r.address1 + r.address2 + r.address3;
-      }
-    }).catch(() => {});
-}
+// 表示
+document.getElementById('h_case_id').textContent = P.case_id || '未設定';
+document.getElementById('h_name').textContent = P.name || '未設定';
+document.getElementById('diag_fee_display').textContent = '¥' + P.initial_fee.toLocaleString();
 
-// === 修理メニュー表示切替 ===
-function toggleRepairMenu() {
-  const isRepair = document.querySelector('input[name="order_type"][value="修理"]');
-  document.getElementById('repair_options_area').style.display = (isRepair && isRepair.checked) ? 'block' : 'none';
-}
-document.querySelectorAll('input[name="order_type"]').forEach(el => {
-  el.addEventListener('change', toggleRepairMenu);
-});
+// 訪問日デフォルト：今日
+document.getElementById('visit_date').value = new Date().toISOString().split('T')[0];
 
-// === 修理カウンター ===
-function changeCount(btn, delta) {
-  const row = btn.closest('.repair-item-row');
-  const span = row.querySelector('.count-num');
+// 見積り有効期限デフォルト（30日後）
+const d30 = new Date(); d30.setDate(d30.getDate() + 30);
+document.getElementById('est_expiry').value = d30.toISOString().split('T')[0];
+document.getElementById('res_est_expiry').value = d30.toISOString().split('T')[0];
+
+// 担当者番号プリセット
+if (P.staff_id) document.getElementById('staff_id').value = P.staff_id;
+
+// === 修理メニューHTML生成 ===
+function buildRepairMenu(containerId, prefix) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = REPAIR_MENU.map((item, i) => `
+    <div class="repair-item" id="${prefix}_row_${i}" data-price="${item.price}">
+      <div>
+        <div class="repair-name">${item.name}</div>
+        <span class="repair-price-tag">¥${item.price.toLocaleString()}</span>
+      </div>
+      <div class="counter">
+        <button class="minus" onclick="changeQty('${prefix}',${i},-1)">-</button>
+        <span class="num" id="${prefix}_qty_${i}">0</span>
+        <button class="plus" onclick="changeQty('${prefix}',${i},1)">+</button>
+      </div>
+    </div>
+  `).join('');
+}
+buildRepairMenu('today_repairs', 'today');
+buildRepairMenu('estimate_repairs', 'est');
+buildRepairMenu('reserve_est_repairs', 'resest');
+
+// === 数量変更 ===
+function changeQty(prefix, idx, delta) {
+  const span = document.getElementById(prefix + '_qty_' + idx);
   let n = parseInt(span.textContent) + delta;
   if (n < 0) n = 0;
   span.textContent = n;
+  const row = document.getElementById(prefix + '_row_' + idx);
   row.classList.toggle('active', n > 0);
+  recalc();
 }
 
-// === クーポン ===
-function applyCoupon() {
-  const code = document.getElementById('c_coupon_code').value.trim().toLowerCase();
-  const res = document.getElementById('coupon_result');
-  if (code === 'ac2026') {
-    couponApplied = true;
-    res.textContent = 'クーポン適用完了：-3,000円';
-    res.className = 'coupon-success';
-  } else {
-    couponApplied = false;
-    res.textContent = '無効なコードです';
-    res.className = 'coupon-error';
-  }
-}
-
-// === UI更新 ===
-function updateUI() {
-  document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-  document.getElementById('step' + currentStep).classList.add('active');
-  for (let i = 1; i <= 7; i++) {
-    const el = document.getElementById('p' + i);
-    if (el) {
-      el.className = 'progress-step';
-      if (i < currentStep) el.classList.add('done');
-      if (i === currentStep) el.classList.add('active');
-    }
-  }
-  document.getElementById('btnBack').style.display = currentStep === 1 ? 'none' : 'block';
-  const next = document.getElementById('btnNext');
-  if (currentStep === 6) next.textContent = '上記に同意して送信';
-  else if (currentStep === 7) document.querySelector('.bottom-nav').style.display = 'none';
-  else next.textContent = '次へ';
-}
-
-// === バリデーション ===
-function clearFieldError(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove('error');
-}
-function setFieldError(id, msg) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.add('error');
-  const errEl = el.querySelector('.error-msg');
-  if (errEl) errEl.textContent = msg;
-}
-
-function validateStep(step) {
-  let ok = true;
-  if (step === 1) {
-    ['f_name','f_kana','f_tel','f_email','f_zip','f_address','f_banchi','f_building'].forEach(clearFieldError);
-    if (!document.getElementById('c_name').value.trim()) { setFieldError('f_name','お名前を入力してください'); ok=false; }
-    if (!document.getElementById('c_tel').value.trim()) { setFieldError('f_tel','電話番号を入力してください'); ok=false; }
-    const email = document.getElementById('c_email').value.trim();
-    if (!email || !email.includes('@')) { setFieldError('f_email','正しいメールアドレスを入力してください'); ok=false; }
-    if (!document.getElementById('c_address').value.trim()) { setFieldError('f_address','住所を入力してください'); ok=false; }
-    if (!document.getElementById('c_banchi').value.trim()) { setFieldError('f_banchi','番地を入力してください'); ok=false; }
-  }
-  if (step === 2) {
-    ['f_equipment','f_symptom'].forEach(clearFieldError);
-    if (!document.getElementById('c_equipment').value) { setFieldError('f_equipment','対象機器を選択してください'); ok=false; }
-    if (getSymptoms().length === 0) { setFieldError('f_symptom','症状を1つ以上選択してください'); ok=false; }
-  }
-  if (step === 6) {
-    const a1 = document.getElementById('agree_contract').checked;
-    const consentInput = document.getElementById('consent_text').value.trim();
-    const a3 = document.getElementById('agree_privacy').checked;
-    const sig = document.getElementById('c_signature').value.trim();
-    const err = document.getElementById('agree_error');
-
-    // 電子交付の承諾：入力文がフレーズと一致するか（全角・半角スペース除去して比較）
-    const normalize = s => s.replace(/[\s　]/g, '');
-    const consentOK = normalize(consentInput) === normalize(CONSENT_PHRASE);
-
-    if (!a1 || !consentOK || !a3 || !sig) {
-      err.style.display = 'block';
-      if (!consentOK && consentInput.length > 0) {
-        err.textContent = '電子交付の承諾文が正しくありません。正確に入力してください。';
-      } else {
-        err.textContent = 'すべての同意事項を満たし、ご署名を入力してください';
-      }
-      ok = false;
-    } else {
-      err.style.display = 'none';
-    }
-  }
-  return ok;
-}
-
-// === ヘルパー ===
-function getSymptoms() { return Array.from(document.querySelectorAll('input[name="symptom"]:checked')).map(c=>c.value); }
-function getOrderType() { return document.querySelector('input[name="order_type"]:checked').value; }
-function getPaymentMethod() { return document.querySelector('input[name="payment_method"]:checked').value; }
-function getSelectedRepairNames() {
-  let items = [];
-  document.querySelectorAll('.repair-item-row').forEach(row => {
-    const cnt = parseInt(row.querySelector('.count-num').textContent);
-    if (cnt > 0) items.push(row.dataset.name + ' x' + cnt);
+// === 合計再計算 ===
+function recalc() {
+  let todayRepair = 0;
+  REPAIR_MENU.forEach((item, i) => {
+    const qty = parseInt(document.getElementById('today_qty_' + i).textContent);
+    todayRepair += item.price * qty;
   });
-  return items.length ? items.join('、') : '';
-}
-function calculateRepairTotal() {
-  let total = 0;
-  document.querySelectorAll('.repair-item-row').forEach(row => {
-    const cnt = parseInt(row.querySelector('.count-num').textContent);
-    if (cnt > 0) total += parseInt(row.dataset.price) * cnt;
+  const todayTotal = P.initial_fee + todayRepair;
+  document.getElementById('today_total').textContent = '¥' + todayTotal.toLocaleString();
+
+  let estTotal = 0;
+  REPAIR_MENU.forEach((item, i) => {
+    const qty = parseInt(document.getElementById('est_qty_' + i).textContent);
+    estTotal += item.price * qty;
   });
-  return total;
+  document.getElementById('est_total').textContent = '¥' + estTotal.toLocaleString();
+
+  let resEstTotal = 0;
+  REPAIR_MENU.forEach((item, i) => {
+    const qty = parseInt(document.getElementById('resest_qty_' + i).textContent);
+    resEstTotal += item.price * qty;
+  });
+  document.getElementById('res_est_total').textContent = '¥' + resEstTotal.toLocaleString();
 }
 
-function getFormData() {
-  const prefix = document.getElementById('c_case_prefix').value;
-  const num = document.getElementById('c_case_num').value;
-  return {
-    case_id: num ? prefix + '-' + num : '',
-    emp_id:    document.getElementById('c_emp_id').value,
-    name:      document.getElementById('c_name').value,
-    kana:      document.getElementById('c_kana').value,
-    tel:       document.getElementById('c_tel').value,
-    email:     document.getElementById('c_email').value,
-    zip:       document.getElementById('c_zip').value,
-    address:   document.getElementById('c_address').value,
-    banchi:    document.getElementById('c_banchi').value,
-    building:  document.getElementById('c_building').value,
-    equipment: document.getElementById('c_equipment').value,
-    maker:     '',
-    symptoms:  getSymptoms(),
-    detail:    document.getElementById('c_detail').value,
-  };
+// === 見積りトグル ===
+function toggleEstimate() {
+  document.getElementById('estimate_area').style.display =
+    document.getElementById('chk_estimate').checked ? 'block' : 'none';
 }
 
-// === ステップ進行 ===
-function nextStep() {
-  if (!validateStep(currentStep)) return;
+// === 契約状況の切替 ===
+function onStatusChange() {
+  setTimeout(() => {
+    const status = document.querySelector('input[name="contract_status"]:checked').value;
+    const isKankou = (status === '完工');
+    const isLoss = (status === '失注');
+    const isCancel = (status === 'キャンセル');
+    const isReserveEst = (status === '予約（見積あり）');
+    const isReserveNo = (status === '予約（見積なし）');
 
-  // Step3 → Step4（確認画面生成）
-  if (currentStep === 3) {
-    const d = getFormData();
-    const sym = d.symptoms.length ? d.symptoms.join('、') : '（選択なし）';
-    const oType = getOrderType();
-    const pay = getPaymentMethod();
-    let repairDetail = '';
-    if (oType === '修理') repairDetail = '<br><span style="font-size:.85rem;color:#666">└ ' + getSelectedRepairNames() + '</span>';
-    let discountMsg = couponApplied ? '<br><span style="color:#e65100;font-weight:bold">※クーポン適用：-3,000円</span>' : '';
+    // セクション表示切替
+    document.getElementById('section_kankou').classList.toggle('hidden', !isKankou);
+    document.getElementById('section_reserve_est').classList.toggle('hidden', !isReserveEst);
+    document.getElementById('section_reason').classList.toggle('hidden', !(isLoss || isCancel));
 
-    document.getElementById('confirmContent').innerHTML = `
-      <div class="confirm-row"><span class="confirm-label">お名前</span><span class="confirm-val">${d.name}（${d.kana}）</span></div>
-      <div class="confirm-row"><span class="confirm-label">電話番号</span><span class="confirm-val">${d.tel}</span></div>
-      <div class="confirm-row"><span class="confirm-label">メール</span><span class="confirm-val">${d.email}</span></div>
-      <div class="confirm-row"><span class="confirm-label">住所</span><span class="confirm-val">〒${d.zip}<br>${d.address} ${d.banchi} ${d.building}</span></div>
-      <div class="confirm-row"><span class="confirm-label">機器</span><span class="confirm-val">${d.equipment || '未選択'}</span></div>
-      <div class="confirm-row"><span class="confirm-label">症状</span><span class="confirm-val">${sym}</span></div>
-      <div class="confirm-row"><span class="confirm-label">作業</span><span class="confirm-val" style="color:var(--blue)">${oType} ${repairDetail} ${discountMsg}</span></div>
-      <div class="confirm-row"><span class="confirm-label">支払い</span><span class="confirm-val">${pay}</span></div>
-    `;
-  }
+    // 通知メッセージ
+    document.getElementById('notice_loss').classList.toggle('hidden', !isLoss);
+    document.getElementById('notice_cancel').classList.toggle('hidden', !isCancel);
+    document.getElementById('notice_reserve_est').classList.toggle('hidden', !isReserveEst);
+    document.getElementById('notice_reserve_no').classList.toggle('hidden', !isReserveNo);
 
-  // Step4 → Step5（見積書表示）
-  if (currentStep === 4) {
-    const orderType = getOrderType();
-    const equip = document.getElementById('c_equipment').value;
-    const feeLabel = document.getElementById('fee_label');
-    let totalAmount = 0;
-    let estRows = '';
+    // ボタンの見た目
+    const btn = document.getElementById('btn_submit');
+    btn.className = 'btn-submit';
+    if (isKankou) { btn.classList.add('btn-primary'); btn.textContent = '完了報告を送信'; }
+    else if (isLoss) { btn.classList.add('btn-loss'); btn.textContent = '失注として報告'; }
+    else if (isCancel) { btn.classList.add('btn-cancel'); btn.textContent = 'キャンセルとして報告'; }
+    else if (isReserveEst) { btn.classList.add('btn-reserve'); btn.textContent = '予約＋見積書を送信'; }
+    else if (isReserveNo) { btn.classList.add('btn-reserve'); btn.textContent = '予約として報告'; }
+  }, 10);
+}
 
-    if (orderType === '原因究明作業') {
-      feeLabel.textContent = '故障診断費用（税込）';
-      const diagFee = equip.includes('業務用') ? 16500 : 9900;
-      totalAmount = diagFee;
-      estRows = '<tr><td style="padding:8px;border-bottom:1px solid #ddd">故障診断（' + (equip || 'ルームエアコン') + '）</td>'
-        + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + diagFee.toLocaleString() + '円</td>'
-        + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">1</td>'
-        + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + diagFee.toLocaleString() + '円</td></tr>';
-    } else {
-      feeLabel.textContent = '修理作業費用（目安・税込）';
-      document.querySelectorAll('.repair-item-row').forEach(row => {
-        const cnt = parseInt(row.querySelector('.count-num').textContent);
-        if (cnt > 0) {
-          const price = parseInt(row.dataset.price);
-          const sub = price * cnt;
-          totalAmount += sub;
-          estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd">' + row.dataset.name + '</td>'
-            + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + price.toLocaleString() + '円</td>'
-            + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">' + cnt + '</td>'
-            + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + sub.toLocaleString() + '円</td></tr>';
-        }
-      });
-    }
+// === 選択されたメニュー取得 ===
+function getSelectedItems(prefix) {
+  const items = [];
+  REPAIR_MENU.forEach((item, i) => {
+    const qty = parseInt(document.getElementById(prefix + '_qty_' + i).textContent);
+    if (qty > 0) items.push({ name: item.name, price: item.price, qty: qty, subtotal: item.price * qty });
+  });
+  return items;
+}
 
-    if (couponApplied) {
-      estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#e65100">クーポン割引</td>'
-        + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd;color:#e65100">-3,000円</td>'
-        + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">1</td>'
-        + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd;color:#e65100">-3,000円</td></tr>';
-      totalAmount -= 3000;
-      if (totalAmount < 0) totalAmount = 0;
-    }
-
-    document.getElementById('est_customer_name').textContent = document.getElementById('c_name').value + ' 様';
-    document.getElementById('est_date').textContent = '発行日：' + new Date().toLocaleDateString('ja-JP');
-    document.getElementById('est_items_body').innerHTML = estRows;
-    document.getElementById('est_total').textContent = '¥' + totalAmount.toLocaleString();
-    document.getElementById('fee_diagnosis').value = totalAmount.toLocaleString('ja-JP');
-  }
-
-  // Step6 → 送信
-  if (currentStep === 6) {
-    doSubmit();
+// === 送信 ===
+async function submitReport() {
+  // バリデーション：担当者番号必須
+  const staffId = document.getElementById('staff_id').value.trim();
+  if (!staffId) {
+    alert('担当者番号を入力してください');
+    document.getElementById('staff_id').focus();
     return;
   }
 
-  currentStep++;
-  updateUI();
-}
-
-function prevStep() {
-  if (currentStep > 1) { currentStep--; updateUI(); }
-}
-
-// === GASへ送信 ===
-async function doSubmit() {
-  if (GAS_API_URL.includes('ここにデプロイID')) {
-    alert('【重要】GASのURLが設定されていません。Code.gsをデプロイしてURLを貼ってください。');
-    return;
-  }
-  const btn = document.getElementById('btnNext');
+  const btn = document.getElementById('btn_submit');
   btn.disabled = true;
-  btn.textContent = '処理中...';
+  btn.textContent = '送信中...';
 
-  const d = getFormData();
-  let orderInfo = getOrderType();
-  if (orderInfo === '修理') orderInfo += '：' + getSelectedRepairNames();
-  if (couponApplied) orderInfo += ' 【クーポン利用(ac2026)】';
-  if (document.getElementById('req_sameday').checked) orderInfo += ' 【当日工事希望】';
+  const status = document.querySelector('input[name="contract_status"]:checked').value;
+  const isKankou = (status === '完工');
+  const isReserveEst = (status === '予約（見積あり）');
+
+  // 今日の作業データ
+  const todayItems = isKankou ? getSelectedItems('today') : [];
+  let todayRepairTotal = 0;
+  todayItems.forEach(it => todayRepairTotal += it.subtotal);
+
+  // 見積書データ
+  let hasEstimate = false;
+  let estItems = [];
+  let estTotal = 0;
+  let estExpiry = '';
+  let estNote = '';
+
+  if (isKankou && document.getElementById('chk_estimate').checked) {
+    hasEstimate = true;
+    estItems = getSelectedItems('est');
+    estItems.forEach(it => estTotal += it.subtotal);
+    estExpiry = document.getElementById('est_expiry').value;
+    estNote = document.getElementById('est_note').value;
+  } else if (isReserveEst) {
+    hasEstimate = true;
+    estItems = getSelectedItems('resest');
+    estItems.forEach(it => estTotal += it.subtotal);
+    estExpiry = document.getElementById('res_est_expiry').value;
+    estNote = document.getElementById('res_est_note').value;
+  }
 
   const payload = {
-    ...d,
-    services: d.symptoms,
-    order_type: orderInfo,
-    payment_method: getPaymentMethod(),
-    fee_diagnosis: document.getElementById('fee_diagnosis').value.replace(/,/g, ''),
-    cancel_rule: document.getElementById('cancel_rule').value,
-    agree_contract: true,
-    agree_electronic: true,
-    consent_text: document.getElementById('consent_text').value.trim(),
-    agree_privacy: true,
-    signature: document.getElementById('c_signature').value
+    form_type: 'estimate',
+    contract_status: status,
+    case_id: P.case_id,
+    name: P.name,
+    email: P.email,
+    tel: P.tel,
+    address: P.address,
+    equipment: P.equipment,
+    staff_id: staffId,
+    visit_date: document.getElementById('visit_date').value,
+
+    // 今日の分（完工時のみ有効）
+    diag_fee: isKankou ? P.initial_fee : 0,
+    today_repairs: todayItems,
+    today_repair_total: todayRepairTotal,
+    today_total: isKankou ? (P.initial_fee + todayRepairTotal) : 0,
+    payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
+
+    // 見積り
+    has_estimate: hasEstimate,
+    estimate_repairs: estItems,
+    estimate_total: estTotal,
+    estimate_expiry: estExpiry,
+    estimate_note: estNote,
+
+    // メモ・理由
+    staff_memo: document.getElementById('staff_memo').value,
+    cancel_reason: document.getElementById('loss_reason') ? document.getElementById('loss_reason').value : '',
   };
 
   try {
-    // GAS WebアプリはCORS制約あり。レスポンス不要なのでそのまま送る
-    await fetch(GAS_API_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
+    await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
   } catch(e) {
-    console.log('送信完了（no-cors fallback）');
+    console.log('送信完了');
   }
 
-  currentStep = 7;
-  updateUI();
+  // 完了画面
+  document.getElementById('main_view').classList.add('hidden');
+  document.getElementById('done_view').classList.remove('hidden');
+
+  // 完了メッセージ
+  const doneMsg = document.getElementById('done_msg');
+  if (status === '完工') doneMsg.innerHTML = '✅ 完了報告を送信しました';
+  else if (status === '失注') doneMsg.innerHTML = '❌ 失注として記録しました';
+  else if (status === 'キャンセル') doneMsg.innerHTML = '🚫 キャンセルとして記録しました';
+  else if (isReserveEst) doneMsg.innerHTML = '📄 予約として記録し、見積書を送信しました';
+  else doneMsg.innerHTML = '📅 予約として記録しました（後追いアラート対象）';
+
+  // 書類発行ボタンの表示制御
+  const showDocSection = hasEstimate || isKankou;
+  document.getElementById('doc_section').style.display = showDocSection ? 'block' : 'none';
+
+  // payloadを保存
+  window._submittedPayload = payload;
+}
+
+// === 書類発行（請求書・領収書） ===
+async function generateDoc(type) {
+  const btn = document.getElementById('btn_' + type);
+  btn.textContent = '発行中...';
+  btn.disabled = true;
+
+  const sp = window._submittedPayload || {};
+  const payload = {
+    form_type: 'generate_doc',
+    doc_type: type,
+    case_id: P.case_id,
+    name: P.name,
+    email: P.email,
+    tel: P.tel,
+    items: sp.has_estimate ? sp.estimate_repairs : sp.today_repairs || [],
+    total: sp.has_estimate ? sp.estimate_total : sp.today_total || 0,
+    payment_method: sp.payment_method || '',
+  };
+
+  try {
+    await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+  } catch(e) {
+    console.log('発行完了');
+  }
+
+  btn.textContent = (type === 'invoice' ? '📑 請求書' : '🧾 領収書') + ' 送信済み ✅';
+  btn.classList.add('done');
+
+  const result = document.getElementById('doc_result');
+  result.textContent = (type === 'invoice' ? '請求書' : '領収書') + 'をメールに送信しました';
+  result.style.color = 'var(--green)';
 }
 </script>
 </body>
