@@ -51,14 +51,11 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
   border-color:var(--blue); background:var(--blue-light); color:var(--blue);
 }
 
-.inv-option-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
-.inv-option-label {
-  border:2px solid var(--border); border-radius:10px; padding:10px 5px; text-align:center;
-  font-size:.85rem; font-weight:600; cursor:pointer; background:#fff; transition:all .2s;
-  display:flex; align-items:center; justify-content:center; min-height:42px;
-}
-.inv-option-label input { display:none; }
-.inv-option-label:has(input:checked) { border-color:var(--green); background:#e8f5e9; color:var(--green); }
+.inv-items { margin-top:8px; }
+.inv-item-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; background:#fff; border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.inv-check { display:flex; align-items:center; gap:8px; flex:1; cursor:pointer; font-size:.9rem; font-weight:600; }
+.inv-check input[type="checkbox"] { transform:scale(1.2); }
+.inv-price { width:100px; padding:8px; border:2px solid var(--border); border-radius:8px; font-size:.9rem; text-align:right; flex-shrink:0; }
 
 #repair_options_area { margin-top:15px; padding:15px; background:var(--blue-light); border-radius:10px; display:none; }
 #investigation_options_area { display:block; margin-top:15px; padding:15px; background:#e8f5e9; border-radius:10px; }
@@ -217,12 +214,12 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
 
         <!-- 原因究明オプション -->
         <div id="investigation_options_area">
-          <div style="font-weight:600;font-size:.9rem;margin-bottom:8px;color:var(--green)">追加条件（該当するものを選択）</div>
-          <div class="inv-option-grid">
-            <label class="inv-option-label"><input type="checkbox" name="inv_option" value="高所危険作業">高所危険作業</label>
-            <label class="inv-option-label"><input type="checkbox" name="inv_option" value="業務用点検">業務用点検</label>
-            <label class="inv-option-label"><input type="checkbox" name="inv_option" value="室外機特殊設置">室外機<br>特殊設置</label>
-            <label class="inv-option-label"><input type="checkbox" name="inv_option" value="電気系統調査">電気系統調査</label>
+          <div style="font-weight:600;font-size:.9rem;margin-bottom:8px;color:var(--green)">追加条件（該当するものを選択・金額入力）</div>
+          <div class="inv-items">
+            <div class="inv-item-row"><label class="inv-check"><input type="checkbox" name="inv_option" value="高所危険作業"><span>高所危険作業</span></label><input type="number" class="inv-price" placeholder="金額" inputmode="numeric"></div>
+            <div class="inv-item-row"><label class="inv-check"><input type="checkbox" name="inv_option" value="業務用点検"><span>業務用点検</span></label><input type="number" class="inv-price" placeholder="金額" inputmode="numeric"></div>
+            <div class="inv-item-row"><label class="inv-check"><input type="checkbox" name="inv_option" value="室外機特殊設置"><span>室外機特殊設置</span></label><input type="number" class="inv-price" placeholder="金額" inputmode="numeric"></div>
+            <div class="inv-item-row"><label class="inv-check"><input type="checkbox" name="inv_option" value="電気系統調査"><span>電気系統調査</span></label><input type="number" class="inv-price" placeholder="金額" inputmode="numeric"></div>
           </div>
         </div>
 
@@ -370,11 +367,11 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
             <input type="text" id="consent_text" placeholder="ここに貼り付け" style="font-size:1rem;text-align:center">
           </div>
 
-          <!-- ③ プライバシーポリシー（リンク付き） -->
-          <label>
-            <input type="checkbox" id="agree_privacy">
-            <span><a href="https://ac-sos.com/privacy/" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline;font-weight:700">プライバシーポリシー</a>に同意します（業務委託先への共有を含む）。</span>
-          </label>
+          <!-- ③ プライバシーポリシー -->
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:.9rem;padding:10px;border:1px solid var(--border);border-radius:8px;background:#fff">
+            <input type="checkbox" id="agree_privacy" style="margin-top:4px;transform:scale(1.2);flex-shrink:0;cursor:pointer">
+            <span><a href="./privacy.html" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--blue);text-decoration:underline;font-weight:700">プライバシーポリシー</a>に同意します（業務委託先への共有を含む）。</span>
+          </div>
         </div>
 
         <div class="field" style="margin-top:20px">
@@ -593,7 +590,17 @@ function validateStep(step) {
 function getSymptoms() { return Array.from(document.querySelectorAll('input[name="symptom"]:checked')).map(c=>c.value); }
 function getOrderType() { return document.querySelector('input[name="order_type"]:checked').value; }
 function getPaymentMethod() { return document.querySelector('input[name="payment_method"]:checked').value; }
-function getInvOptions() { return Array.from(document.querySelectorAll('input[name="inv_option"]:checked')).map(c=>c.value); }
+function getInvOptions() {
+  const items = [];
+  document.querySelectorAll('.inv-item-row').forEach(row => {
+    const cb = row.querySelector('input[type="checkbox"]');
+    if (cb && cb.checked) {
+      const price = parseInt(row.querySelector('.inv-price').value) || 0;
+      items.push({ name: cb.value, price: price });
+    }
+  });
+  return items;
+}
 function getSelectedRepairNames() {
   let items = [];
   document.querySelectorAll('.repair-item-row').forEach(row => {
@@ -651,7 +658,7 @@ function nextStep() {
     }
     if (oType === '原因究明作業') {
       const inv = getInvOptions();
-      if (inv.length) extra = '<br><span style="font-size:.85rem;color:#666">└ ' + inv.join('、') + '</span>';
+      if (inv.length) extra = '<br><span style="font-size:.85rem;color:#666">└ ' + inv.map(v => v.name + (v.price ? '(¥'+v.price.toLocaleString()+')' : '')).join('、') + '</span>';
     }
     let disc = couponApplied ? '<br><span style="color:#e65100;font-weight:bold">※クーポン適用：-3,000円</span>' : '';
 
@@ -684,12 +691,20 @@ function nextStep() {
         + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + diagFee.toLocaleString() + '円</td>'
         + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">1</td>'
         + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + diagFee.toLocaleString() + '円</td></tr>';
-      // 原因究明追加オプション表示
+      // 原因究明追加オプション（金額あれば合計に加算）
       const inv = getInvOptions();
-      if (inv.length) {
-        estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666;font-size:.85rem">追加条件: ' + inv.join('、') + '</td>'
-          + '<td colspan="3" style="padding:8px;border-bottom:1px solid #ddd;color:#666;font-size:.85rem;text-align:right">※現地確認後に追加費用の有無をご案内</td></tr>';
-      }
+      inv.forEach(v => {
+        if (v.price > 0) {
+          totalAmount += v.price;
+          estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd">' + v.name + '</td>'
+            + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + v.price.toLocaleString() + '円</td>'
+            + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">1</td>'
+            + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + v.price.toLocaleString() + '円</td></tr>';
+        } else {
+          estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666;font-size:.85rem">' + v.name + '</td>'
+            + '<td colspan="3" style="padding:8px;border-bottom:1px solid #ddd;color:#666;font-size:.85rem;text-align:right">※現地確認後にご案内</td></tr>';
+        }
+      });
     } else {
       feeLabel.textContent = '修理作業費用（目安・税込）';
       document.querySelectorAll('.repair-item-row').forEach(row => {
@@ -750,7 +765,7 @@ async function doSubmit() {
   let orderInfo = getOrderType();
   if (orderInfo === '原因究明作業') {
     const inv = getInvOptions();
-    if (inv.length) orderInfo += '（' + inv.join('・') + '）';
+    if (inv.length) orderInfo += '（' + inv.map(v => v.name + (v.price ? ':¥'+v.price : '')).join('・') + '）';
   }
   if (orderInfo === '修理' || orderInfo.startsWith('修理')) {
     const names = getSelectedRepairNames();
