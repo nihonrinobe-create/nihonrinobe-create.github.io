@@ -52,10 +52,10 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
 }
 
 .inv-items { margin-top:8px; }
-.inv-item-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; background:#fff; border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
-.inv-check { display:flex; align-items:center; gap:8px; flex:1; cursor:pointer; font-size:.9rem; font-weight:600; }
-.inv-check input[type="checkbox"] { transform:scale(1.2); }
-.inv-price { width:100px; padding:8px; border:2px solid var(--border); border-radius:8px; font-size:.9rem; text-align:right; flex-shrink:0; }
+.inv-item-row { background:#fff; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:6px; }
+.inv-check { display:flex; align-items:center; gap:10px; cursor:pointer; font-size:.9rem; font-weight:600; }
+.inv-check input[type="checkbox"] { transform:scale(1.3); flex-shrink:0; }
+.inv-price { width:100%; padding:10px; border:2px solid var(--border); border-radius:8px; font-size:1rem; margin-top:8px; }
 
 #repair_options_area { margin-top:15px; padding:15px; background:var(--blue-light); border-radius:10px; display:none; }
 #investigation_options_area { display:block; margin-top:15px; padding:15px; background:#e8f5e9; border-radius:10px; }
@@ -391,6 +391,10 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
       <div class="complete-icon">🎉</div>
       <h2>受付完了しました</h2>
       <p>ご登録のメールアドレスに「契約書控え（PDF）」をお送りしました。<br>担当者よりご連絡いたします。</p>
+      <div id="report_link_area" style="margin-top:20px;padding:16px;background:var(--blue-light);border:2px solid var(--blue);border-radius:12px;display:none">
+        <div style="font-weight:700;color:var(--blue);margin-bottom:8px">📋 業務報告はこちら</div>
+        <a id="report_link" href="#" target="_blank" style="display:block;background:var(--blue);color:#fff;padding:14px;border-radius:10px;text-decoration:none;font-weight:700;text-align:center;font-size:1rem">業務報告フォームを開く</a>
+      </div>
     </div>
   </div>
 
@@ -797,6 +801,17 @@ async function doSubmit() {
 
   currentStep = 7;
   updateUI();
+
+  // 業務報告リンク生成
+  const enc = s => encodeURIComponent(s || '');
+  const estUrl = 'https://nihonrinobe-create.github.io/estimate.html'
+    + '?case_id=' + enc(d.case_id)
+    + '&name=' + enc(d.name) + '&email=' + enc(d.email)
+    + '&tel=' + enc(d.tel) + '&equipment=' + enc(d.equipment)
+    + '&staff_id=' + enc(d.emp_id)
+    + '&initial_fee=' + enc(payload.fee_diagnosis);
+  document.getElementById('report_link').href = estUrl;
+  document.getElementById('report_link_area').style.display = 'block';
 }
 </script>
 </body>
