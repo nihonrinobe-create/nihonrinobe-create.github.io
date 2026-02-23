@@ -99,7 +99,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 <div class="hero">
   <h1>📋 業務報告</h1>
   <div class="case-info">
-    案件ID: <span id="h_case_id">---</span> ／ <span id="h_name">---</span> 様
+    案件番号: <span id="h_case_id">---</span> ／ <span id="h_name">---</span> 様
   </div>
 </div>
 
@@ -113,7 +113,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div class="card-title">👤 報告者情報</div>
       <div class="field">
         <label>担当者番号 <span class="field-required">※必須</span></label>
-        <input type="text" id="staff_id" placeholder="例：T001" inputmode="text">
+        <input type="text" id="staff_id" placeholder="例：0001" inputmode="numeric">
       </div>
       <div class="field">
         <label>訪問日</label>
@@ -305,7 +305,8 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 // ================================
 // ★ GAS WebアプリのURLをここに貼る ★
 // ================================
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGpm0_a_TTIrudeuq8NE27LVQmdYMA_zIaGG1lcNg0u-y6FsfK77A/exec';
+const GAS_API_URL = 'https://script.google.com/macros/s/ここにデプロイIDを貼る/exec';
+
 // === 修理メニュー定義 ===
 const REPAIR_MENU = [
   { name: '冷媒ガス注入（500gまで）', price: 29700 },
