@@ -53,9 +53,8 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
 
 .inv-items { margin-top:8px; }
 .inv-item-row { background:#fff; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:6px; }
-.inv-check { display:flex; align-items:center; gap:10px; cursor:pointer; font-size:.9rem; font-weight:600; }
-.inv-check input[type="checkbox"] { transform:scale(1.3); flex-shrink:0; }
-.inv-price { width:100%; padding:10px; border:2px solid var(--border); border-radius:8px; font-size:1rem; margin-top:8px; }
+.inv-label { font-size:.9rem; font-weight:600; margin-bottom:6px; }
+.inv-price { width:100%; padding:10px; border:2px solid var(--border); border-radius:8px; font-size:1rem; }
 
 #repair_options_area { margin-top:15px; padding:15px; background:var(--blue-light); border-radius:10px; display:none; }
 #investigation_options_area { display:block; margin-top:15px; padding:15px; background:#e8f5e9; border-radius:10px; }
@@ -214,12 +213,12 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
 
         <!-- 原因究明オプション -->
         <div id="investigation_options_area">
-          <div style="font-weight:600;font-size:.9rem;margin-bottom:8px;color:var(--green)">追加条件（該当するものを選択・金額入力）</div>
+          <div style="font-weight:600;font-size:.9rem;margin-bottom:8px;color:var(--green)">追加条件（該当する項目に金額を入力）</div>
           <div class="inv-items">
-            <div class="inv-item-row"><label class="inv-check"><input type="checkbox" name="inv_option" value="高所危険作業"><span>高所危険作業</span></label><input type="number" class="inv-price" placeholder="金額" inputmode="numeric"></div>
-            <div class="inv-item-row"><label class="inv-check"><input type="checkbox" name="inv_option" value="業務用点検"><span>業務用点検</span></label><input type="number" class="inv-price" placeholder="金額" inputmode="numeric"></div>
-            <div class="inv-item-row"><label class="inv-check"><input type="checkbox" name="inv_option" value="室外機特殊設置"><span>室外機特殊設置</span></label><input type="number" class="inv-price" placeholder="金額" inputmode="numeric"></div>
-            <div class="inv-item-row"><label class="inv-check"><input type="checkbox" name="inv_option" value="電気系統調査"><span>電気系統調査</span></label><input type="number" class="inv-price" placeholder="金額" inputmode="numeric"></div>
+            <div class="inv-item-row" data-inv-name="高所危険作業"><div class="inv-label">高所危険作業</div><input type="number" class="inv-price" placeholder="金額（税込）" inputmode="numeric"></div>
+            <div class="inv-item-row" data-inv-name="業務用点検"><div class="inv-label">業務用点検</div><input type="number" class="inv-price" placeholder="金額（税込）" inputmode="numeric"></div>
+            <div class="inv-item-row" data-inv-name="室外機特殊設置"><div class="inv-label">室外機特殊設置</div><input type="number" class="inv-price" placeholder="金額（税込）" inputmode="numeric"></div>
+            <div class="inv-item-row" data-inv-name="電気系統調査"><div class="inv-label">電気系統調査</div><input type="number" class="inv-price" placeholder="金額（税込）" inputmode="numeric"></div>
           </div>
         </div>
 
@@ -377,7 +376,7 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
         <div class="field" style="margin-top:20px">
           <label>ご署名（お名前を入力）<span style="color:red;font-size:.8rem">※必須</span></label>
           <input type="text" id="c_signature" placeholder="例：山田太郎">
-          <div class="field-hint">契約の証として、ご本人様のお名前を入力してください。</div>
+          <div class="field-hint">お名前欄に入力したお名前と同じ内容を正確に入力してください。</div>
         </div>
       </div>
 
@@ -570,14 +569,18 @@ function validateStep(step) {
     const consentInput = document.getElementById('consent_text').value.trim();
     const a3 = document.getElementById('agree_privacy').checked;
     const sig = document.getElementById('c_signature').value.trim();
+    const customerName = document.getElementById('c_name').value.trim();
     const err = document.getElementById('agree_error');
 
     const normalize = s => s.replace(/[\s　]/g, '');
     const consentOK = normalize(consentInput) === normalize(CONSENT_PHRASE);
+    const sigMatch = normalize(sig) === normalize(customerName);
 
-    if (!a1 || !consentOK || !a3 || !sig) {
+    if (!a1 || !consentOK || !a3 || !sig || !sigMatch) {
       err.style.display = 'block';
-      if (!consentOK && consentInput.length > 0) {
+      if (!sigMatch && sig.length > 0) {
+        err.textContent = '署名がお名前と一致しません。「' + customerName + '」と入力してください。';
+      } else if (!consentOK && consentInput.length > 0) {
         err.textContent = '電子交付の承諾文が正しくありません。正確に入力してください。';
       } else {
         err.textContent = 'すべての同意事項を満たし、ご署名を入力してください';
@@ -597,10 +600,9 @@ function getPaymentMethod() { return document.querySelector('input[name="payment
 function getInvOptions() {
   const items = [];
   document.querySelectorAll('.inv-item-row').forEach(row => {
-    const cb = row.querySelector('input[type="checkbox"]');
-    if (cb && cb.checked) {
-      const price = parseInt(row.querySelector('.inv-price').value) || 0;
-      items.push({ name: cb.value, price: price });
+    const price = parseInt(row.querySelector('.inv-price').value) || 0;
+    if (price > 0) {
+      items.push({ name: row.dataset.invName, price: price });
     }
   });
   return items;
