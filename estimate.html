@@ -365,6 +365,13 @@ function initUI() {
         P.equipment = r.equipment || P.equipment;
         P.initial_fee = parseInt(r.initial_fee) || P.initial_fee;
         P.staff_id = r.staff_id || P.staff_id;
+        // 振込期限がある場合、支払い方法を「振込」に設定して期限入力
+        if (r.payment_method === '振込' && r.transfer_deadline) {
+          const radios = document.querySelectorAll('input[name="payment"]');
+          radios.forEach(rb => { if (rb.value === '振込') rb.checked = true; });
+          document.getElementById('est_transfer_deadline_area').style.display = 'block';
+          document.getElementById('est_transfer_deadline').value = r.transfer_deadline;
+        }
       }
     } catch(e) { console.log('lookup error', e); }
   }
@@ -575,10 +582,12 @@ async function submitReport() {
     cancel_reason: document.getElementById('loss_reason') ? document.getElementById('loss_reason').value : '',
   };
 
+  let gasResult = {};
   try {
-    await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+    const resp = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+    gasResult = await resp.json();
   } catch(e) {
-    console.log('送信完了');
+    console.log('送信完了（レスポンス解析失敗）');
   }
 
   // 完了画面
@@ -592,6 +601,11 @@ async function submitReport() {
   else if (status === 'キャンセル') doneMsg.innerHTML = '🚫 キャンセルとして記録しました';
   else if (isReserveEst) doneMsg.innerHTML = '📄 予約として記録し、見積書を送信しました';
   else doneMsg.innerHTML = '📅 予約として記録しました（後追いアラート対象）';
+
+  // 売上管理エラー表示
+  if (gasResult.uriage_error) {
+    doneMsg.innerHTML += '<br><span style="color:red;font-size:.85rem">⚠ 売上管理シート: ' + gasResult.uriage_error + '</span>';
+  }
 
   // 書類発行ボタンの表示制御
   const showDocSection = hasEstimate || isKankou;
