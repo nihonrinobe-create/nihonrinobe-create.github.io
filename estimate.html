@@ -345,7 +345,11 @@ function initUI() {
   document.getElementById('h_name').textContent = P.name || '未設定';
   document.getElementById('diag_fee_display').textContent = '¥' + P.initial_fee.toLocaleString();
   document.getElementById('today_total').textContent = '¥' + P.initial_fee.toLocaleString();
-  if (P.staff_id) document.getElementById('staff_id').value = P.staff_id;
+  if (P.staff_id) {
+    let sid = String(P.staff_id);
+    while (sid.length > 0 && sid.length < 4) sid = '0' + sid;
+    document.getElementById('staff_id').value = sid;
+  }
 }
 
 // 短縮URL: ?c=CASE_ID のみの場合、GASからデータ取得
@@ -515,12 +519,14 @@ function getSelectedItems(prefix) {
 // === 送信 ===
 async function submitReport() {
   // バリデーション：担当者番号必須
-  const staffId = document.getElementById('staff_id').value.trim();
+  let staffId = document.getElementById('staff_id').value.trim();
   if (!staffId) {
     alert('担当者番号を入力してください');
     document.getElementById('staff_id').focus();
     return;
   }
+  // 0埋め4桁に統一
+  while (staffId.length > 0 && staffId.length < 4) staffId = '0' + staffId;
 
   const btn = document.getElementById('btn_submit');
   btn.disabled = true;
