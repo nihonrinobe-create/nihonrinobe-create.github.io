@@ -365,12 +365,18 @@ function initUI() {
         P.equipment = r.equipment || P.equipment;
         P.initial_fee = parseInt(r.initial_fee) || P.initial_fee;
         P.staff_id = r.staff_id || P.staff_id;
-        // 振込期限がある場合、支払い方法を「振込」に設定して期限入力
-        if (r.payment_method === '振込' && r.transfer_deadline) {
+        // 振込の場合、支払い方法を自動設定
+        if (r.payment_method === '振込') {
           const radios = document.querySelectorAll('input[name="payment"]');
           radios.forEach(rb => { if (rb.value === '振込') rb.checked = true; });
           document.getElementById('est_transfer_deadline_area').style.display = 'block';
-          document.getElementById('est_transfer_deadline').value = r.transfer_deadline;
+          if (r.transfer_deadline) {
+            document.getElementById('est_transfer_deadline').value = r.transfer_deadline;
+          } else {
+            // 振込期限が未設定なら14日後をデフォルト
+            const d14 = new Date(); d14.setDate(d14.getDate() + 14);
+            document.getElementById('est_transfer_deadline').value = d14.toISOString().split('T')[0];
+          }
         }
       }
     } catch(e) { console.log('lookup error', e); }
@@ -632,6 +638,7 @@ async function generateDoc(type) {
     items: sp.has_estimate ? sp.estimate_repairs : sp.today_repairs || [],
     total: sp.has_estimate ? sp.estimate_total : sp.today_total || 0,
     payment_method: sp.payment_method || '',
+    transfer_deadline: sp.transfer_deadline || '',
   };
 
   try {
