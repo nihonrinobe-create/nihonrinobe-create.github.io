@@ -675,7 +675,7 @@ function getFormData() {
   const num = document.getElementById('c_case_num').value;
   return {
     case_id: num ? prefix + '-' + num : '',
-    emp_id:    document.getElementById('c_emp_id').value,
+    emp_id:    (function(){ var s=document.getElementById('c_emp_id').value.trim(); while(s.length>0&&s.length<4)s='0'+s; return s; })(),
     name:      document.getElementById('c_name').value,
     kana:      document.getElementById('c_kana').value,
     tel:       document.getElementById('c_tel').value,
