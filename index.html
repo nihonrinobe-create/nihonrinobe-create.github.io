@@ -276,6 +276,10 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
           <label class="payment-label"><input type="radio" name="payment_method" value="振込">振込</label>
           <label class="payment-label"><input type="radio" name="payment_method" value="ご相談">ご相談</label>
         </div>
+        <div id="transfer_deadline_area" style="display:none;margin-top:10px">
+          <label style="font-size:.85rem;font-weight:600">振込期限</label>
+          <input type="date" id="transfer_deadline" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem;margin-top:4px">
+        </div>
       </div>
     </div>
   </div>
@@ -431,24 +435,48 @@ function copyConsent() {
 }
 
 // === URL パラメータ自動入力 ===
-window.onload = function() {
+window.onload = async function() {
   const p = new URLSearchParams(location.search);
-  if (p.get('case_id')) {
-    const parts = p.get('case_id').split('-');
-    if (parts.length > 1 && ['YA','HM','CP'].includes(parts[0])) {
-      document.getElementById('c_case_prefix').value = parts[0];
-      document.getElementById('c_case_num').value = parts.slice(1).join('-');
-    } else {
-      document.getElementById('c_case_num').value = p.get('case_id');
-    }
+  const shortId = p.get('c');
+
+  // 短縮URL: ?c=CASE_ID → GASからデータ取得
+  if (shortId && !p.get('name')) {
+    try {
+      const resp = await fetch(GAS_API_URL, {
+        method: 'POST', body: JSON.stringify({ form_type: 'lookup', case_id: shortId })
+      });
+      const r = await resp.json();
+      if (r.ok) {
+        fillCaseId(r.case_id);
+        if (r.name)     document.getElementById('c_name').value = r.name;
+        if (r.tel)      document.getElementById('c_tel').value = r.tel;
+        if (r.email)    document.getElementById('c_email').value = r.email;
+        if (r.address)  document.getElementById('c_address').value = (r.address||'') + ' ' + (r.banchi||'');
+      }
+    } catch(e) { console.log('lookup error', e); }
+  } else {
+    // 通常URL: フルパラメータ
+    if (p.get('case_id')) fillCaseId(p.get('case_id'));
+    if (shortId) fillCaseId(shortId);
+    if (p.get('emp_id'))  document.getElementById('c_emp_id').value = p.get('emp_id');
+    if (p.get('name'))    document.getElementById('c_name').value = p.get('name');
+    if (p.get('tel'))     document.getElementById('c_tel').value = p.get('tel');
+    if (p.get('email'))   document.getElementById('c_email').value = p.get('email');
+    if (p.get('address')) document.getElementById('c_address').value = p.get('address');
   }
-  if (p.get('emp_id'))  document.getElementById('c_emp_id').value = p.get('emp_id');
-  if (p.get('name'))    document.getElementById('c_name').value = p.get('name');
-  if (p.get('tel'))     document.getElementById('c_tel').value = p.get('tel');
-  if (p.get('email'))   document.getElementById('c_email').value = p.get('email');
-  if (p.get('address')) document.getElementById('c_address').value = p.get('address');
   toggleWorkMenus();
 };
+
+function fillCaseId(caseId) {
+  if (!caseId) return;
+  const parts = caseId.split('-');
+  if (parts.length > 1 && ['YA','HM','CP'].includes(parts[0])) {
+    document.getElementById('c_case_prefix').value = parts[0];
+    document.getElementById('c_case_num').value = parts.slice(1).join('-');
+  } else {
+    document.getElementById('c_case_num').value = caseId;
+  }
+}
 
 // === 郵便番号→住所自動入力 ===
 function autoFillAddress(zip) {
@@ -597,6 +625,22 @@ function validateStep(step) {
 function getSymptoms() { return Array.from(document.querySelectorAll('input[name="symptom"]:checked')).map(c=>c.value); }
 function getOrderType() { return document.querySelector('input[name="order_type"]:checked').value; }
 function getPaymentMethod() { return document.querySelector('input[name="payment_method"]:checked').value; }
+
+// 振込期限フィールドの表示切替
+document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const area = document.getElementById('transfer_deadline_area');
+    if (getPaymentMethod() === '振込') {
+      area.style.display = 'block';
+      if (!document.getElementById('transfer_deadline').value) {
+        const d14 = new Date(); d14.setDate(d14.getDate() + 14);
+        document.getElementById('transfer_deadline').value = d14.toISOString().split('T')[0];
+      }
+    } else {
+      area.style.display = 'none';
+    }
+  });
+});
 function getInvOptions() {
   const items = [];
   document.querySelectorAll('.inv-item-row').forEach(row => {
@@ -787,6 +831,7 @@ async function doSubmit() {
     services: d.symptoms,
     order_type: orderInfo,
     payment_method: getPaymentMethod(),
+    transfer_deadline: getPaymentMethod() === '振込' ? document.getElementById('transfer_deadline').value : '',
     fee_diagnosis: document.getElementById('fee_diagnosis').value.replace(/,/g, ''),
     cancel_rule: document.getElementById('cancel_rule').value,
     custom_items: customItems.length ? customItems.map(c => c.name + ':' + c.price).join('、') : '',
@@ -804,14 +849,8 @@ async function doSubmit() {
   currentStep = 7;
   updateUI();
 
-  // 業務報告リンク生成
-  const enc = s => encodeURIComponent(s || '');
-  const estUrl = 'https://nihonrinobe-create.github.io/estimate.html'
-    + '?case_id=' + enc(d.case_id)
-    + '&name=' + enc(d.name) + '&email=' + enc(d.email)
-    + '&tel=' + enc(d.tel) + '&equipment=' + enc(d.equipment)
-    + '&staff_id=' + enc(d.emp_id)
-    + '&initial_fee=' + enc(payload.fee_diagnosis);
+  // 業務報告リンク生成（短縮URL）
+  const estUrl = 'https://nihonrinobe-create.github.io/estimate.html?c=' + encodeURIComponent(d.case_id);
   document.getElementById('report_link').href = estUrl;
   document.getElementById('report_link_area').style.display = 'block';
 }
