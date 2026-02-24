@@ -722,7 +722,9 @@ function nextStep() {
       '<div class="confirm-row"><span class="confirm-label">機器</span><span class="confirm-val">' + (d.equipment || '未選択') + '</span></div>' +
       '<div class="confirm-row"><span class="confirm-label">症状</span><span class="confirm-val">' + sym + '</span></div>' +
       '<div class="confirm-row"><span class="confirm-label">作業</span><span class="confirm-val" style="color:var(--blue)">' + oType + extra + disc + '</span></div>' +
-      '<div class="confirm-row"><span class="confirm-label">支払い</span><span class="confirm-val">' + pay + '</span></div>';
+      '<div class="confirm-row"><span class="confirm-label">支払い</span><span class="confirm-val">' + pay +
+        (pay === '振込' ? '<br><span style="font-size:.85rem;color:#666">振込期限: ' + (document.getElementById('transfer_deadline').value || '未設定') + '</span>' : '') +
+      '</span></div>';
   }
 
   // Step4 → Step5（見積書生成）
