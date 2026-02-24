@@ -368,14 +368,15 @@ function initUI() {
         // 振込の場合、支払い方法を自動設定
         if (r.payment_method === '振込') {
           const radios = document.querySelectorAll('input[name="payment"]');
-          radios.forEach(rb => { if (rb.value === '振込') rb.checked = true; });
-          document.getElementById('est_transfer_deadline_area').style.display = 'block';
+          radios.forEach(rb => {
+            if (rb.value === '振込') {
+              rb.checked = true;
+              rb.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          });
+          // changeイベントで14日後がセットされるが、案件台帳の値があれば上書き
           if (r.transfer_deadline) {
             document.getElementById('est_transfer_deadline').value = r.transfer_deadline;
-          } else {
-            // 振込期限が未設定なら14日後をデフォルト
-            const d14 = new Date(); d14.setDate(d14.getDate() + 14);
-            document.getElementById('est_transfer_deadline').value = d14.toISOString().split('T')[0];
           }
         }
       }
@@ -573,8 +574,14 @@ async function submitReport() {
     today_repair_total: todayRepairTotal,
     today_total: isKankou ? (P.initial_fee + todayRepairTotal) : 0,
     payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
-    transfer_deadline: (isKankou && document.querySelector('input[name="payment"]:checked').value === '振込')
-      ? document.getElementById('est_transfer_deadline').value : '',
+    transfer_deadline: (() => {
+      if (!isKankou || document.querySelector('input[name="payment"]:checked').value !== '振込') return '';
+      const v = document.getElementById('est_transfer_deadline').value;
+      if (v) return v;
+      // 空なら14日後をデフォルト
+      const d14 = new Date(); d14.setDate(d14.getDate() + 14);
+      return d14.toISOString().split('T')[0];
+    })(),
 
     // 見積り
     has_estimate: hasEstimate,
