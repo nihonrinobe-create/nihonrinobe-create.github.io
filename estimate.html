@@ -190,7 +190,12 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <div class="pay-grid">
             <label class="pay-label"><input type="radio" name="payment" value="現金" checked>現金</label>
             <label class="pay-label"><input type="radio" name="payment" value="カード">カード</label>
+            <label class="pay-label"><input type="radio" name="payment" value="振込">振込</label>
             <label class="pay-label"><input type="radio" name="payment" value="後日請求">後日請求</label>
+          </div>
+          <div id="est_transfer_deadline_area" style="display:none;margin-top:10px">
+            <label style="font-size:.85rem;font-weight:600">振込期限</label>
+            <input type="date" id="est_transfer_deadline" style="width:100%;padding:10px;border:2px solid #d9dee4;border-radius:8px;font-size:1rem;margin-top:4px">
           </div>
         </div>
       </div>
@@ -324,7 +329,7 @@ const REPAIR_MENU = [
 // === URLパラメータから情報取得 ===
 const params = new URLSearchParams(location.search);
 const P = {
-  case_id:     params.get('case_id') || '',
+  case_id:     params.get('case_id') || params.get('c') || '',
   name:        params.get('name') || '',
   email:       params.get('email') || '',
   tel:         params.get('tel') || '',
@@ -334,10 +339,37 @@ const P = {
   staff_id:    params.get('staff_id') || '',
 };
 
-// 表示
-document.getElementById('h_case_id').textContent = P.case_id || '未設定';
-document.getElementById('h_name').textContent = P.name || '未設定';
-document.getElementById('diag_fee_display').textContent = '¥' + P.initial_fee.toLocaleString();
+// UI初期化関数
+function initUI() {
+  document.getElementById('h_case_id').textContent = P.case_id || '未設定';
+  document.getElementById('h_name').textContent = P.name || '未設定';
+  document.getElementById('diag_fee_display').textContent = '¥' + P.initial_fee.toLocaleString();
+  document.getElementById('today_total').textContent = '¥' + P.initial_fee.toLocaleString();
+  if (P.staff_id) document.getElementById('staff_id').value = P.staff_id;
+}
+
+// 短縮URL: ?c=CASE_ID のみの場合、GASからデータ取得
+(async function() {
+  if (P.case_id && !params.get('name') && !params.get('initial_fee')) {
+    try {
+      document.getElementById('h_case_id').textContent = P.case_id + '（読込中...）';
+      const resp = await fetch(GAS_API_URL, {
+        method: 'POST', body: JSON.stringify({ form_type: 'lookup', case_id: P.case_id })
+      });
+      const r = await resp.json();
+      if (r.ok) {
+        P.name = r.name || P.name;
+        P.email = r.email || P.email;
+        P.tel = r.tel || P.tel;
+        P.address = (r.address||'') + ' ' + (r.banchi||'');
+        P.equipment = r.equipment || P.equipment;
+        P.initial_fee = parseInt(r.initial_fee) || P.initial_fee;
+        P.staff_id = r.staff_id || P.staff_id;
+      }
+    } catch(e) { console.log('lookup error', e); }
+  }
+  initUI();
+})();
 
 // 訪問日デフォルト：今日
 document.getElementById('visit_date').value = new Date().toISOString().split('T')[0];
@@ -346,9 +378,6 @@ document.getElementById('visit_date').value = new Date().toISOString().split('T'
 const d30 = new Date(); d30.setDate(d30.getDate() + 30);
 document.getElementById('est_expiry').value = d30.toISOString().split('T')[0];
 document.getElementById('res_est_expiry').value = d30.toISOString().split('T')[0];
-
-// 担当者番号プリセット
-if (P.staff_id) document.getElementById('staff_id').value = P.staff_id;
 
 // === 修理メニューHTML生成 ===
 function buildRepairMenu(containerId, prefix) {
@@ -412,6 +441,20 @@ function toggleEstimate() {
   document.getElementById('estimate_area').style.display =
     document.getElementById('chk_estimate').checked ? 'block' : 'none';
 }
+
+// === 振込期限の表示切替 ===
+document.querySelectorAll('input[name="payment"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const area = document.getElementById('est_transfer_deadline_area');
+    if (document.querySelector('input[name="payment"]:checked').value === '振込') {
+      area.style.display = 'block';
+      if (!document.getElementById('est_transfer_deadline').value) {
+        const d14 = new Date(); d14.setDate(d14.getDate() + 14);
+        document.getElementById('est_transfer_deadline').value = d14.toISOString().split('T')[0];
+      }
+    } else { area.style.display = 'none'; }
+  });
+});
 
 // === 契約状況の切替 ===
 function onStatusChange() {
@@ -517,6 +560,8 @@ async function submitReport() {
     today_repair_total: todayRepairTotal,
     today_total: isKankou ? (P.initial_fee + todayRepairTotal) : 0,
     payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
+    transfer_deadline: (isKankou && document.querySelector('input[name="payment"]:checked').value === '振込')
+      ? document.getElementById('est_transfer_deadline').value : '',
 
     // 見積り
     has_estimate: hasEstimate,
