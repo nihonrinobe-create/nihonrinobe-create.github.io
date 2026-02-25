@@ -288,6 +288,649 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <p style="font-size:.85rem;color:var(--text-sub);margin-bottom:10px">
           見積りが承認されたら、ここから請求書を発行できます。
         </p>
+        <div style="text-align:center;margin-top:10px">
+          <button class="doc-btn" id="btn_invoice" onclick="generateDoc('invoice')" style="width:60%;max-width:280px">
+            📑 請求書を発行
+          </button>
+        </div>
+        <div class="field-hint" style="margin-top:10px">
+          ※請求書は発行ボタンを押すとお客様のメールに送信されます。
+        </div>
+        <div id="doc_result" style="margin-top:10px;font-weight:700"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ================================
+// ★ GAS WebアプリのURLをここに貼る ★
+// ================================
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGpm0_a_TTIrudeuq8NE27LVQmdYMA_zIaGG1lcNg0u-y6FsfK77A/exec';
+
+// === 修理メニュー定義 ===
+const REPAIR_MENU = [
+  { name: '冷媒ガス注入（500gまで）', price: 29700 },
+  { name: '冷媒ガス追加（100g）', price: 3300 },
+  { name: '真空引き', price: 17600 },
+  { name: 'フレア加工・バルブコア交換', price: 17600 },
+  { name: '水漏れ修復', price: 28600 },
+  { name: '四方弁動作不良解消', price: 26400 },
+  { name: '電源部再接続', price: 26400 },
+  { name: 'エアコン標準取付', price: 28600 },
+  { name: 'エアコン取り外し', price: 8800 },
+  { name: '穴開け工事', price: 26400 },
+];
+
+// === URLパラメータから情報取得 ===
+const params = new URLSearchParams(location.search);
+const P = {
+  case_id:     params.get('case_id') || params.get('c') || '',
+  name:        params.get('name') || '',
+  email:       params.get('email') || '',
+  tel:         params.get('tel') || '',
+  address:     params.get('address') || '',
+  initial_fee: parseInt(params.get('initial_fee')) || 9900,
+  equipment:   params.get('equipment') || '',
+  staff_id:    params.get('staff_id') || '',
+};
+
+// UI初期化関数
+function initUI() {
+  document.getElementById('h_case_id').textContent = P.case_id || '未設定';
+  document.getElementById('h_name').textContent = P.name || '未設定';
+  document.getElementById('diag_fee_display').textContent = '¥' + P.initial_fee.toLocaleString();
+  document.getElementById('today_total').textContent = '¥' + P.initial_fee.toLocaleString();
+  if (P.staff_id) {
+    let sid = String(P.staff_id);
+    while (sid.length > 0 && sid.length < 4) sid = '0' + sid;
+    document.getElementById('staff_id').value = sid;
+  }
+}
+
+// 短縮URL: ?c=CASE_ID のみの場合、GASからデータ取得
+(async function() {
+  if (P.case_id && !params.get('name') && !params.get('initial_fee')) {
+    try {
+      document.getElementById('h_case_id').textContent = P.case_id + '（読込中...）';
+      const resp = await fetch(GAS_API_URL, {
+        method: 'POST', body: JSON.stringify({ form_type: 'lookup', case_id: P.case_id })
+      });
+      const r = await resp.json();
+      if (r.ok) {
+        P.name = r.name || P.name;
+        P.email = r.email || P.email;
+        P.tel = r.tel || P.tel;
+        P.address = (r.address||'') + ' ' + (r.banchi||'');
+        P.equipment = r.equipment || P.equipment;
+        P.initial_fee = parseInt(r.initial_fee) || P.initial_fee;
+        P.staff_id = r.staff_id || P.staff_id;
+        P.order_items = r.order_items || [];
+        P.payment_method = r.payment_method || '';
+        // 支払い方法を自動設定（全種類対応）
+        if (r.payment_method) {
+          const radios = document.querySelectorAll('input[name="payment"]');
+          radios.forEach(rb => {
+            if (rb.value === r.payment_method) {
+              rb.checked = true;
+              rb.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          });
+          // 銀行振り込みの場合、振込期限を上書き
+          if (r.payment_method === '銀行振り込み' && r.transfer_deadline) {
+            document.getElementById('est_transfer_deadline').value = r.transfer_deadline;
+          }
+        }
+      }
+    } catch(e) { console.log('lookup error', e); }
+  }
+  initUI();
+})();
+
+// 訪問日デフォルト：今日
+document.getElementById('visit_date').value = new Date().toISOString().split('T')[0];
+
+// 見積り有効期限デフォルト（30日後）
+const d30 = new Date(); d30.setDate(d30.getDate() + 30);
+document.getElementById('est_expiry').value = d30.toISOString().split('T')[0];
+document.getElementById('res_est_expiry').value = d30.toISOString().split('T')[0];
+
+// === 修理メニューHTML生成 ===
+function buildRepairMenu(containerId, prefix) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = REPAIR_MENU.map((item, i) => `
+    <div class="repair-item" id="${prefix}_row_${i}" data-price="${item.price}">
+      <div>
+        <div class="repair-name">${item.name}</div>
+        <span class="repair-price-tag">¥${item.price.toLocaleString()}</span>
+      </div>
+      <div class="counter">
+        <button class="minus" onclick="changeQty('${prefix}',${i},-1)">-</button>
+        <span class="num" id="${prefix}_qty_${i}">0</span>
+        <button class="plus" onclick="changeQty('${prefix}',${i},1)">+</button>
+      </div>
+    </div>
+  `).join('');
+}
+buildRepairMenu('today_repairs', 'today');
+buildRepairMenu('estimate_repairs', 'est');
+buildRepairMenu('reserve_est_repairs', 'resest');
+
+// === 数量変更 ===
+function changeQty(prefix, idx, delta) {
+  const span = document.getElementById(prefix + '_qty_' + idx);
+  let n = parseInt(span.textContent) + delta;
+  if (n < 0) n = 0;
+  span.textContent = n;
+  const row = document.getElementById(prefix + '_row_' + idx);
+  row.classList.toggle('active', n > 0);
+  recalc();
+}
+
+// === 合計再計算 ===
+function recalc() {
+  let todayRepair = 0;
+  REPAIR_MENU.forEach((item, i) => {
+    const qty = parseInt(document.getElementById('today_qty_' + i).textContent);
+    todayRepair += item.price * qty;
+  });
+  const todayTotal = P.initial_fee + todayRepair;
+  document.getElementById('today_total').textContent = '¥' + todayTotal.toLocaleString();
+
+  let estTotal = 0;
+  REPAIR_MENU.forEach((item, i) => {
+    const qty = parseInt(document.getElementById('est_qty_' + i).textContent);
+    estTotal += item.price * qty;
+  });
+  document.getElementById('est_total').textContent = '¥' + estTotal.toLocaleString();
+
+  let resEstTotal = 0;
+  REPAIR_MENU.forEach((item, i) => {
+    const qty = parseInt(document.getElementById('resest_qty_' + i).textContent);
+    resEstTotal += item.price * qty;
+  });
+  document.getElementById('res_est_total').textContent = '¥' + resEstTotal.toLocaleString();
+}
+
+// === 見積りトグル ===
+function toggleEstimate() {
+  document.getElementById('estimate_area').style.display =
+    document.getElementById('chk_estimate').checked ? 'block' : 'none';
+}
+
+// === 振込期限の表示切替 ===
+document.querySelectorAll('input[name="payment"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const area = document.getElementById('est_transfer_deadline_area');
+    if (document.querySelector('input[name="payment"]:checked').value === '銀行振り込み') {
+      area.style.display = 'block';
+      if (!document.getElementById('est_transfer_deadline').value) {
+        const d14 = new Date(); d14.setDate(d14.getDate() + 14);
+        document.getElementById('est_transfer_deadline').value = d14.toISOString().split('T')[0];
+      }
+    } else { area.style.display = 'none'; }
+  });
+});
+
+// === 契約状況の切替 ===
+function onStatusChange() {
+  setTimeout(() => {
+    const status = document.querySelector('input[name="contract_status"]:checked').value;
+    const isKankou = (status === '完工');
+    const isLoss = (status === '失注');
+    const isCancel = (status === 'キャンセル');
+    const isReserveEst = (status === '予約（見積あり）');
+    const isReserveNo = (status === '予約（見積なし）');
+
+    // セクション表示切替
+    document.getElementById('section_kankou').classList.toggle('hidden', !isKankou);
+    document.getElementById('section_reserve_est').classList.toggle('hidden', !isReserveEst);
+    document.getElementById('section_reason').classList.toggle('hidden', !(isLoss || isCancel));
+
+    // 通知メッセージ
+    document.getElementById('notice_loss').classList.toggle('hidden', !isLoss);
+    document.getElementById('notice_cancel').classList.toggle('hidden', !isCancel);
+    document.getElementById('notice_reserve_est').classList.toggle('hidden', !isReserveEst);
+    document.getElementById('notice_reserve_no').classList.toggle('hidden', !isReserveNo);
+
+    // ボタンの見た目
+    const btn = document.getElementById('btn_submit');
+    btn.className = 'btn-submit';
+    if (isKankou) { btn.classList.add('btn-primary'); btn.textContent = '完了報告を送信'; }
+    else if (isLoss) { btn.classList.add('btn-loss'); btn.textContent = '失注として報告'; }
+    else if (isCancel) { btn.classList.add('btn-cancel'); btn.textContent = 'キャンセルとして報告'; }
+    else if (isReserveEst) { btn.classList.add('btn-reserve'); btn.textContent = '予約＋見積書を送信'; }
+    else if (isReserveNo) { btn.classList.add('btn-reserve'); btn.textContent = '予約として報告'; }
+  }, 10);
+}
+
+// === 選択されたメニュー取得 ===
+function getSelectedItems(prefix) {
+  const items = [];
+  REPAIR_MENU.forEach((item, i) => {
+    const qty = parseInt(document.getElementById(prefix + '_qty_' + i).textContent);
+    if (qty > 0) items.push({ name: item.name, price: item.price, qty: qty, subtotal: item.price * qty });
+  });
+  return items;
+}
+
+// === 送信 ===
+async function submitReport() {
+  // バリデーション：担当者番号必須
+  let staffId = document.getElementById('staff_id').value.trim();
+  if (!staffId) {
+    alert('担当者番号を入力してください');
+    document.getElementById('staff_id').focus();
+    return;
+  }
+  // 0埋め4桁に統一
+  while (staffId.length > 0 && staffId.length < 4) staffId = '0' + staffId;
+
+  const btn = document.getElementById('btn_submit');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  const status = document.querySelector('input[name="contract_status"]:checked').value;
+  const isKankou = (status === '完工');
+  const isReserveEst = (status === '予約（見積あり）');
+
+  // 今日の作業データ
+  const todayItems = isKankou ? getSelectedItems('today') : [];
+  let todayRepairTotal = 0;
+  todayItems.forEach(it => todayRepairTotal += it.subtotal);
+
+  // 見積書データ
+  let hasEstimate = false;
+  let estItems = [];
+  let estTotal = 0;
+  let estExpiry = '';
+  let estNote = '';
+
+  if (isKankou && document.getElementById('chk_estimate').checked) {
+    hasEstimate = true;
+    estItems = getSelectedItems('est');
+    estItems.forEach(it => estTotal += it.subtotal);
+    estExpiry = document.getElementById('est_expiry').value;
+    estNote = document.getElementById('est_note').value;
+  } else if (isReserveEst) {
+    hasEstimate = true;
+    estItems = getSelectedItems('resest');
+    estItems.forEach(it => estTotal += it.subtotal);
+    estExpiry = document.getElementById('res_est_expiry').value;
+    estNote = document.getElementById('res_est_note').value;
+  }
+
+  const payload = {
+    form_type: 'estimate',
+    contract_status: status,
+    case_id: P.case_id,
+    name: P.name,
+    email: P.email,
+    tel: P.tel,
+    address: P.address,
+    equipment: P.equipment,
+    staff_id: staffId,
+    visit_date: document.getElementById('visit_date').value,
+
+    // 今日の分（完工時のみ有効）
+    diag_fee: isKankou ? P.initial_fee : 0,
+    today_repairs: todayItems,
+    today_repair_total: todayRepairTotal,
+    today_total: isKankou ? (P.initial_fee + todayRepairTotal) : 0,
+    payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
+    transfer_deadline: (() => {
+      if (!isKankou || document.querySelector('input[name="payment"]:checked').value !== '銀行振り込み') return '';
+      const v = document.getElementById('est_transfer_deadline').value;
+      if (v) return v;
+      // 空なら14日後をデフォルト
+      const d14 = new Date(); d14.setDate(d14.getDate() + 14);
+      return d14.toISOString().split('T')[0];
+    })(),
+
+    // 見積り
+    has_estimate: hasEstimate,
+    estimate_repairs: estItems,
+    estimate_total: estTotal,
+    estimate_expiry: estExpiry,
+    estimate_note: estNote,
+
+    // メモ・理由
+    staff_memo: document.getElementById('staff_memo').value,
+    cancel_reason: document.getElementById('loss_reason') ? document.getElementById('loss_reason').value : '',
+  };
+
+  let gasResult = {};
+  try {
+    const resp = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+    gasResult = await resp.json();
+  } catch(e) {
+    console.log('送信完了（レスポンス解析失敗）');
+  }
+
+  // 完了画面
+  document.getElementById('main_view').classList.add('hidden');
+  document.getElementById('done_view').classList.remove('hidden');
+
+  // 完了メッセージ
+  const doneMsg = document.getElementById('done_msg');
+  if (status === '完工') doneMsg.innerHTML = '✅ 完了報告を送信しました';
+  else if (status === '失注') doneMsg.innerHTML = '❌ 失注として記録しました';
+  else if (status === 'キャンセル') doneMsg.innerHTML = '🚫 キャンセルとして記録しました';
+  else if (isReserveEst) doneMsg.innerHTML = '📄 予約として記録し、見積書を送信しました';
+  else doneMsg.innerHTML = '📅 予約として記録しました（後追いアラート対象）';
+
+  // 売上管理エラー表示
+  if (gasResult.uriage_error) {
+    doneMsg.innerHTML += '<br><span style="color:red;font-size:.85rem">⚠ 売上管理シート: ' + gasResult.uriage_error + '</span>';
+  }
+
+  // 書類発行ボタンの表示制御
+  const showDocSection = hasEstimate || isKankou;
+  document.getElementById('doc_section').style.display = showDocSection ? 'block' : 'none';
+
+  // payloadを保存
+  window._submittedPayload = payload;
+}
+
+// === 書類発行（請求書・領収書） ===
+async function generateDoc(type) {
+  const btn = document.getElementById('btn_' + type);
+  btn.textContent = '発行中...';
+  btn.disabled = true;
+
+  const sp = window._submittedPayload || {};
+
+  // 請求書・領収書用のitems構築
+  // 1) 注文時の内訳（order_items）があればそれをベースに使う
+  // 2) なければ診断費＋追加作業から構築
+  let docItems = [];
+
+  if (P.order_items && P.order_items.length > 0) {
+    // 注文時の内訳をそのまま使用
+    docItems = P.order_items.map(r => ({
+      name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty
+    }));
+    // 業務報告で追加した今日の作業があれば追加
+    (sp.today_repairs || []).forEach(r => {
+      // 注文時内訳と重複しない項目だけ追加
+      const exists = docItems.some(d => d.name === r.name);
+      if (!exists) {
+        docItems.push({ name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty });
+      }
+    });
+  } else {
+    // フォールバック：診断費＋追加作業
+    if (sp.diag_fee) {
+      const diagName = '故障診断' + (P.equipment ? '（' + P.equipment + '）' : '');
+      docItems.push({ name: diagName, price: sp.diag_fee, qty: 1, subtotal: sp.diag_fee });
+    }
+    (sp.today_repairs || []).forEach(r => {
+      docItems.push({ name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty });
+    });
+  }
+
+  // 見積りベースの場合はそちらを使う
+  if (sp.has_estimate && sp.estimate_repairs && sp.estimate_repairs.length > 0) {
+    docItems = sp.estimate_repairs.map(r => ({
+      name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty
+    }));
+  }
+  // totalはdocItemsの合計から計算（order_items使用時も正確になる）
+  let docTotal = 0;
+  if (sp.has_estimate) {
+    docTotal = sp.estimate_total || 0;
+  } else if (docItems.length > 0) {
+    docTotal = docItems.reduce((sum, r) => sum + (r.subtotal || 0), 0);
+  } else {
+    docTotal = sp.today_total || 0;
+  }
+
+  const payload = {
+    form_type: 'generate_doc',
+    doc_type: type,
+    case_id: P.case_id,
+    name: P.name,
+    email: P.email,
+    tel: P.tel,
+    items: docItems,
+    total: docTotal,
+    payment_method: sp.payment_method || P.payment_method || '',
+    transfer_deadline: sp.transfer_deadline || '',
+  };
+
+  try {
+    await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+  } catch(e) {
+    console.log('発行完了');
+  }
+
+  btn.textContent = '📑 請求書 送信済み ✅';
+  btn.classList.add('done');
+
+  const result = document.getElementById('doc_result');
+  result.textContent = '請求書をメールに送信しました';
+  result.style.color = 'var(--green)';
+}
+</script>
+</body>
+</html>
+/* 後日ドキュメント発行 */
+.doc-section{margin-top:20px}
+.doc-btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.doc-btn{padding:12px;border-radius:10px;border:2px solid var(--border);background:#fff;font-weight:700;font-size:.85rem;cursor:pointer;text-align:center}
+.doc-btn:hover{border-color:var(--blue);background:var(--blue-light)}
+.doc-btn.done{border-color:var(--green);background:var(--green-light);color:var(--green)}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:5px}
+.field input,.field textarea,.field select{width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem;background:#fff}
+.field-hint{font-size:.75rem;color:var(--text-sub);margin-top:4px}
+.field-required{color:var(--red);font-size:.8rem}
+.complete-msg{text-align:center;padding:30px 20px;font-size:1.1rem}
+.hidden{display:none}
+
+/* 失注・キャンセル時のメッセージ */
+.status-notice{padding:16px;border-radius:10px;margin:14px 0;text-align:center;font-weight:600;font-size:.95rem}
+.status-notice.loss-notice{background:#ffebee;border:2px solid var(--red);color:var(--red)}
+.status-notice.cancel-notice{background:#eee;border:2px solid #999;color:#555}
+.status-notice.reserve-notice{background:var(--orange-bg);border:2px solid var(--orange);color:var(--orange)}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>📋 業務報告</h1>
+  <div class="case-info">
+    案件番号: <span id="h_case_id">---</span> ／ <span id="h_name">---</span> 様
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ===== メイン画面 ===== -->
+  <div id="main_view">
+
+    <!-- 担当者番号 -->
+    <div class="card">
+      <div class="card-title">👤 報告者情報</div>
+      <div class="field">
+        <label>担当者番号 <span class="field-required">※必須</span></label>
+        <input type="text" id="staff_id" placeholder="例：0001" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>訪問日</label>
+        <input type="date" id="visit_date">
+      </div>
+    </div>
+
+    <!-- 契約状況 -->
+    <div class="section-title">📊 契約状況</div>
+    <div class="card">
+      <div class="status-grid">
+        <label class="status-label" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="完工" checked>
+          <span class="icon">✅</span>完工
+        </label>
+        <label class="status-label loss" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="失注">
+          <span class="icon">❌</span>失注
+        </label>
+        <label class="status-label reserve" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="予約（見積あり）">
+          <span class="icon">📄</span>予約<br><small>見積あり</small>
+        </label>
+        <label class="status-label reserve" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="予約（見積なし）">
+          <span class="icon">📅</span>予約<br><small>見積なし</small>
+        </label>
+        <label class="status-label cancel" onclick="onStatusChange()">
+          <input type="radio" name="contract_status" value="キャンセル">
+          <span class="icon">🚫</span>キャンセル
+        </label>
+      </div>
+    </div>
+
+    <!-- 失注・キャンセル時の通知 -->
+    <div id="notice_loss" class="status-notice loss-notice hidden">
+      売上 ¥0 で報告します（広告費は記録されます）
+    </div>
+    <div id="notice_cancel" class="status-notice cancel-notice hidden">
+      キャンセルとして報告します（広告費は記録されます）
+    </div>
+    <div id="notice_reserve_est" class="status-notice reserve-notice hidden">
+      予約として記録し、見積書をメールで送付します
+    </div>
+    <div id="notice_reserve_no" class="status-notice reserve-notice hidden">
+      予約として記録します（後追いアラート対象になります）
+    </div>
+
+    <!-- ===== 完工セクション ===== -->
+    <div id="section_kankou">
+
+      <!-- 今日の作業 -->
+      <div class="section-title">💰 今日の費用</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee">
+          <span style="font-weight:600">故障診断費</span>
+          <span style="font-weight:700;color:var(--blue)" id="diag_fee_display">¥9,900</span>
+        </div>
+      </div>
+
+      <div class="section-title">🔧 今日やった追加作業</div>
+      <div class="card" id="today_repairs">
+        <!-- JSで生成 -->
+      </div>
+
+      <div class="total-box">
+        <div class="total-label">今日のお支払い合計（税込）</div>
+        <div class="total-amount" id="today_total">¥9,900</div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label>お支払い方法</label>
+          <div class="pay-grid">
+            <label class="pay-label"><input type="radio" name="payment" value="現金" checked>現金</label>
+            <label class="pay-label"><input type="radio" name="payment" value="クレジットカード">クレジットカード</label>
+            <label class="pay-label"><input type="radio" name="payment" value="銀行振り込み">銀行振り込み</label>
+            <label class="pay-label"><input type="radio" name="payment" value="後日請求">後日請求</label>
+          </div>
+          <div id="est_transfer_deadline_area" style="display:none;margin-top:10px">
+            <label style="font-size:.85rem;font-weight:600">振込期限</label>
+            <input type="date" id="est_transfer_deadline" style="width:100%;padding:10px;border:2px solid #d9dee4;border-radius:8px;font-size:1rem;margin-top:4px">
+          </div>
+        </div>
+      </div>
+
+      <!-- 後日見積り（完工時にも使える） -->
+      <div class="toggle-box" id="toggle_estimate_box">
+        <label class="toggle-label">
+          <input type="checkbox" id="chk_estimate" onchange="toggleEstimate()">
+          <span>後日分の見積書も作成する</span>
+        </label>
+        <div id="estimate_area">
+          <div class="field" style="margin-top:10px">
+            <label>見積り有効期限</label>
+            <input type="date" id="est_expiry">
+          </div>
+          <div class="field">
+            <label>見積り備考</label>
+            <textarea id="est_note" rows="2" placeholder="例：室外機の基板交換が必要。部品取寄せ1週間。"></textarea>
+          </div>
+          <div id="estimate_repairs">
+            <!-- JSで生成 -->
+          </div>
+          <div class="estimate-total-box">
+            <div class="estimate-total-label">見積り合計（税込）</div>
+            <div class="estimate-total-amount" id="est_total">¥0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 予約（見積あり）セクション ===== -->
+    <div id="section_reserve_est" class="hidden">
+      <div class="section-title">📄 見積書の作成</div>
+      <div class="card">
+        <div class="field">
+          <label>見積り有効期限</label>
+          <input type="date" id="res_est_expiry">
+        </div>
+        <div class="field">
+          <label>見積り備考</label>
+          <textarea id="res_est_note" rows="2" placeholder="例：室外機の基板交換が必要。部品取寄せ1週間。"></textarea>
+        </div>
+      </div>
+      <div id="reserve_est_repairs">
+        <!-- JSで生成 -->
+      </div>
+      <div class="estimate-total-box">
+        <div class="estimate-total-label">見積り合計（税込）</div>
+        <div class="estimate-total-amount" id="res_est_total">¥0</div>
+      </div>
+    </div>
+
+    <!-- 失注・キャンセル理由 -->
+    <div id="section_reason" class="hidden">
+      <div class="card">
+        <div class="field">
+          <label>理由・備考</label>
+          <textarea id="loss_reason" rows="3" placeholder="失注・キャンセルの理由を入力"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 共通メモ -->
+    <div class="card">
+      <div class="field">
+        <label>担当者メモ（社内用）</label>
+        <textarea id="staff_memo" rows="2" placeholder="現場の状況・お客様への説明内容など"></textarea>
+      </div>
+    </div>
+
+    <!-- 送信ボタン -->
+    <button class="btn-submit btn-primary" id="btn_submit" onclick="submitReport()">
+      報告を送信
+    </button>
+    <div class="field-hint" style="text-align:center;margin-top:8px" id="submit_hint">
+      ※送信後、売上管理シートに自動記録されます
+    </div>
+  </div>
+
+  <!-- ===== 送信完了画面 ===== -->
+  <div id="done_view" class="hidden">
+    <div class="complete-msg" id="done_msg">
+      ✅ 報告を送信しました
+    </div>
+
+    <!-- 後日ドキュメント発行 -->
+    <div class="doc-section" id="doc_section">
+      <div class="section-title">📄 書類発行（後日用）</div>
+      <div class="card">
+        <p style="font-size:.85rem;color:var(--text-sub);margin-bottom:10px">
+          見積りが承認されたら、ここから請求書を発行できます。
+        </p>
         <div class="doc-btn-grid">
           <button class="doc-btn" id="btn_invoice" onclick="generateDoc('invoice')">
             📑 請求書を発行
