@@ -92,6 +92,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .status-notice.loss-notice{background:#ffebee;border:2px solid var(--red);color:var(--red)}
 .status-notice.cancel-notice{background:#eee;border:2px solid #999;color:#555}
 .status-notice.reserve-notice{background:var(--orange-bg);border:2px solid var(--orange);color:var(--orange)}
+.status-label.hold:has(input:checked){border-color:#7b1fa2;background:#f3e5f5;color:#7b1fa2}
+.status-notice.hold-notice{background:#f3e5f5;border:2px solid #7b1fa2;color:#7b1fa2}
+.btn-hold{background:#7b1fa2;color:#fff}
 </style>
 </head>
 <body>
@@ -150,26 +153,30 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
     <!-- 契約状況 -->
     <div class="section-title">📊 契約状況</div>
     <div class="card">
-      <div class="status-grid">
+      <div class="status-grid" id="status_grid">
         <label class="status-label" onclick="onStatusChange()">
           <input type="radio" name="contract_status" value="完工" checked>
           <span class="icon">✅</span>完工
         </label>
-        <label class="status-label loss" onclick="onStatusChange()">
-          <input type="radio" name="contract_status" value="失注">
-          <span class="icon">❌</span>失注
-        </label>
-        <label class="status-label reserve" onclick="onStatusChange()">
+        <label class="status-label reserve" onclick="onStatusChange()" id="opt_reserve_est">
           <input type="radio" name="contract_status" value="予約（見積あり）">
           <span class="icon">📄</span>予約<br><small>見積あり</small>
         </label>
-        <label class="status-label reserve" onclick="onStatusChange()">
+        <label class="status-label reserve" onclick="onStatusChange()" id="opt_reserve_no">
           <input type="radio" name="contract_status" value="予約（見積なし）">
           <span class="icon">📅</span>予約<br><small>見積なし</small>
         </label>
-        <label class="status-label cancel" onclick="onStatusChange()">
+        <label class="status-label loss" onclick="onStatusChange()" id="opt_loss">
+          <input type="radio" name="contract_status" value="失注">
+          <span class="icon">❌</span>失注
+        </label>
+        <label class="status-label cancel" onclick="onStatusChange()" id="opt_cancel">
           <input type="radio" name="contract_status" value="キャンセル">
           <span class="icon">🚫</span>キャンセル
+        </label>
+        <label class="status-label hold" onclick="onStatusChange()" id="opt_hold">
+          <input type="radio" name="contract_status" value="不通・保留">
+          <span class="icon">⏸️</span>不通・保留
         </label>
       </div>
     </div>
@@ -186,6 +193,57 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div id="notice_reserve_no" class="status-notice reserve-notice hidden">
       予約として記録します（後追いアラート対象になります）
+    </div>
+    <div id="notice_hold" class="status-notice hold-notice hidden">
+      不通・保留として記録します
+    </div>
+
+    <!-- 予約日時（予約系共通） -->
+    <div id="section_reserve_datetime" class="hidden">
+      <div class="section-title">📅 予約日時</div>
+      <div class="card">
+        <div class="field">
+          <label>予約日 <span class="field-required">※必須</span></label>
+          <input type="date" id="reserve_date">
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="field" style="flex:1">
+            <label>開始時間</label>
+            <select id="reserve_time_start" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
+              <option value="">--</option>
+              <option value="08:00">08:00</option><option value="08:30">08:30</option>
+              <option value="09:00" selected>09:00</option><option value="09:30">09:30</option>
+              <option value="10:00">10:00</option><option value="10:30">10:30</option>
+              <option value="11:00">11:00</option><option value="11:30">11:30</option>
+              <option value="12:00">12:00</option><option value="12:30">12:30</option>
+              <option value="13:00">13:00</option><option value="13:30">13:30</option>
+              <option value="14:00">14:00</option><option value="14:30">14:30</option>
+              <option value="15:00">15:00</option><option value="15:30">15:30</option>
+              <option value="16:00">16:00</option><option value="16:30">16:30</option>
+              <option value="17:00">17:00</option><option value="17:30">17:30</option>
+              <option value="18:00">18:00</option>
+            </select>
+          </div>
+          <span style="font-size:1.2rem;font-weight:700;margin-top:20px">〜</span>
+          <div class="field" style="flex:1">
+            <label>終了時間</label>
+            <select id="reserve_time_end" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
+              <option value="">--</option>
+              <option value="09:00">09:00</option><option value="09:30">09:30</option>
+              <option value="10:00">10:00</option><option value="10:30">10:30</option>
+              <option value="11:00">11:00</option><option value="11:30">11:30</option>
+              <option value="12:00">12:00</option><option value="12:30">12:30</option>
+              <option value="13:00" selected>13:00</option><option value="13:30">13:30</option>
+              <option value="14:00">14:00</option><option value="14:30">14:30</option>
+              <option value="15:00">15:00</option><option value="15:30">15:30</option>
+              <option value="16:00">16:00</option><option value="16:30">16:30</option>
+              <option value="17:00">17:00</option><option value="17:30">17:30</option>
+              <option value="18:00">18:00</option><option value="18:30">18:30</option>
+              <option value="19:00">19:00</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ===== 完工セクション ===== -->
@@ -376,6 +434,21 @@ function initUI() {
   // パラメータなしの場合、お客様情報入力セクションを表示
   const hasData = P.case_id || P.name;
   document.getElementById('customer_input_section').style.display = hasData ? 'none' : 'block';
+
+  // ステータスオプション制御
+  // パラメータあり → 完工 + 予約（見積あり）のみ
+  // パラメータなし → 全部表示
+  if (hasData) {
+    document.getElementById('opt_reserve_no').style.display = 'none';
+    document.getElementById('opt_loss').style.display = 'none';
+    document.getElementById('opt_cancel').style.display = 'none';
+    document.getElementById('opt_hold').style.display = 'none';
+    // グリッドを2列に調整
+    document.getElementById('status_grid').style.gridTemplateColumns = '1fr 1fr';
+  } else {
+    // 全表示（3列）
+    document.getElementById('status_grid').style.gridTemplateColumns = '1fr 1fr 1fr';
+  }
   // 既存データがあればマニュアル欄にもプリセット
   if (P.case_id) document.getElementById('manual_case_id').value = P.case_id;
   if (P.name)    document.getElementById('manual_name').value = P.name;
@@ -532,17 +605,21 @@ function onStatusChange() {
     const isCancel = (status === 'キャンセル');
     const isReserveEst = (status === '予約（見積あり）');
     const isReserveNo = (status === '予約（見積なし）');
+    const isHold = (status === '不通・保留');
+    const isReserve = isReserveEst || isReserveNo;
 
     // セクション表示切替
     document.getElementById('section_kankou').classList.toggle('hidden', !isKankou);
     document.getElementById('section_reserve_est').classList.toggle('hidden', !isReserveEst);
     document.getElementById('section_reason').classList.toggle('hidden', !(isLoss || isCancel));
+    document.getElementById('section_reserve_datetime').classList.toggle('hidden', !isReserve);
 
     // 通知メッセージ
     document.getElementById('notice_loss').classList.toggle('hidden', !isLoss);
     document.getElementById('notice_cancel').classList.toggle('hidden', !isCancel);
     document.getElementById('notice_reserve_est').classList.toggle('hidden', !isReserveEst);
     document.getElementById('notice_reserve_no').classList.toggle('hidden', !isReserveNo);
+    document.getElementById('notice_hold').classList.toggle('hidden', !isHold);
 
     // ボタンの見た目
     const btn = document.getElementById('btn_submit');
@@ -552,6 +629,7 @@ function onStatusChange() {
     else if (isCancel) { btn.classList.add('btn-cancel'); btn.textContent = 'キャンセルとして報告'; }
     else if (isReserveEst) { btn.classList.add('btn-reserve'); btn.textContent = '予約＋見積書を送信'; }
     else if (isReserveNo) { btn.classList.add('btn-reserve'); btn.textContent = '予約として報告'; }
+    else if (isHold) { btn.classList.add('btn-hold'); btn.textContent = '不通・保留として報告'; }
   }, 10);
 }
 
@@ -594,8 +672,17 @@ async function submitReport() {
   const status = document.querySelector('input[name="contract_status"]:checked').value;
   const isKankou = (status === '完工');
   const isReserveEst = (status === '予約（見積あり）');
+  const isReserveNo = (status === '予約（見積なし）');
+  const isReserve = isReserveEst || isReserveNo;
 
-  // 今日の作業データ
+  // 予約時：日付必須
+  if (isReserve && !document.getElementById('reserve_date').value) {
+    alert('予約日を入力してください');
+    document.getElementById('reserve_date').focus();
+    btn.disabled = false;
+    btn.textContent = isReserveEst ? '予約＋見積書を送信' : '予約として報告';
+    return;
+  }  // 今日の作業データ
   const todayItems = isKankou ? getSelectedItems('today') : [];
   let todayRepairTotal = 0;
   todayItems.forEach(it => todayRepairTotal += it.subtotal);
@@ -658,6 +745,11 @@ async function submitReport() {
     // メモ・理由
     staff_memo: document.getElementById('staff_memo').value,
     cancel_reason: document.getElementById('loss_reason') ? document.getElementById('loss_reason').value : '',
+
+    // 予約日時
+    reserve_date: document.getElementById('reserve_date').value || '',
+    reserve_time_start: document.getElementById('reserve_time_start').value || '',
+    reserve_time_end: document.getElementById('reserve_time_end').value || '',
   };
 
   let gasResult = {};
@@ -678,6 +770,7 @@ async function submitReport() {
   else if (status === '失注') doneMsg.innerHTML = '❌ 失注として記録しました';
   else if (status === 'キャンセル') doneMsg.innerHTML = '🚫 キャンセルとして記録しました';
   else if (isReserveEst) doneMsg.innerHTML = '📄 予約として記録し、見積書を送信しました';
+  else if (status === '不通・保留') doneMsg.innerHTML = '⏸️ 不通・保留として記録しました';
   else doneMsg.innerHTML = '📅 予約として記録しました（後追いアラート対象）';
 
   // 売上管理エラー表示
