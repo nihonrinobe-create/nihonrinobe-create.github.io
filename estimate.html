@@ -286,18 +286,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div class="section-title">📄 書類発行（後日用）</div>
       <div class="card">
         <p style="font-size:.85rem;color:var(--text-sub);margin-bottom:10px">
-          見積りが承認されたら、ここから請求書・領収書を発行できます。
+          見積りが承認されたら、ここから請求書を発行できます。
         </p>
         <div class="doc-btn-grid">
           <button class="doc-btn" id="btn_invoice" onclick="generateDoc('invoice')">
             📑 請求書を発行
           </button>
-          <button class="doc-btn" id="btn_receipt" onclick="generateDoc('receipt')">
-            🧾 領収書を発行
-          </button>
         </div>
         <div class="field-hint" style="margin-top:10px">
-          ※請求書・領収書は発行ボタンを押すとお客様のメールに送信されます。
+          ※請求書は発行ボタンを押すとお客様のメールに送信されます。
         </div>
         <div id="doc_result" style="margin-top:10px;font-weight:700"></div>
       </div>
@@ -370,17 +367,18 @@ function initUI() {
         P.initial_fee = parseInt(r.initial_fee) || P.initial_fee;
         P.staff_id = r.staff_id || P.staff_id;
         P.order_items = r.order_items || [];
-        // 振込の場合、支払い方法を自動設定
-        if (r.payment_method === '銀行振り込み') {
+        P.payment_method = r.payment_method || '';
+        // 支払い方法を自動設定（全種類対応）
+        if (r.payment_method) {
           const radios = document.querySelectorAll('input[name="payment"]');
           radios.forEach(rb => {
-            if (rb.value === '銀行振り込み') {
+            if (rb.value === r.payment_method) {
               rb.checked = true;
               rb.dispatchEvent(new Event('change', { bubbles: true }));
             }
           });
-          // changeイベントで14日後がセットされるが、案件台帳の値があれば上書き
-          if (r.transfer_deadline) {
+          // 銀行振り込みの場合、振込期限を上書き
+          if (r.payment_method === '銀行振り込み' && r.transfer_deadline) {
             document.getElementById('est_transfer_deadline').value = r.transfer_deadline;
           }
         }
@@ -697,7 +695,7 @@ async function generateDoc(type) {
     tel: P.tel,
     items: docItems,
     total: docTotal,
-    payment_method: sp.payment_method || '',
+    payment_method: sp.payment_method || P.payment_method || '',
     transfer_deadline: sp.transfer_deadline || '',
   };
 
@@ -707,11 +705,11 @@ async function generateDoc(type) {
     console.log('発行完了');
   }
 
-  btn.textContent = (type === 'invoice' ? '📑 請求書' : '🧾 領収書') + ' 送信済み ✅';
+  btn.textContent = '📑 請求書 送信済み ✅';
   btn.classList.add('done');
 
   const result = document.getElementById('doc_result');
-  result.textContent = (type === 'invoice' ? '請求書' : '領収書') + 'をメールに送信しました';
+  result.textContent = '請求書をメールに送信しました';
   result.style.color = 'var(--green)';
 }
 </script>
