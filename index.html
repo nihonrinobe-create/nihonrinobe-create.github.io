@@ -272,8 +272,8 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
         <label>お支払い方法 <span style="color:red;font-size:.8rem">※必須</span></label>
         <div class="payment-grid">
           <label class="payment-label"><input type="radio" name="payment_method" value="現金" checked>現金</label>
-          <label class="payment-label"><input type="radio" name="payment_method" value="カード">カード</label>
-          <label class="payment-label"><input type="radio" name="payment_method" value="振込">振込</label>
+          <label class="payment-label"><input type="radio" name="payment_method" value="クレジットカード">クレジットカード</label>
+          <label class="payment-label"><input type="radio" name="payment_method" value="銀行振り込み">銀行振り込み</label>
           <label class="payment-label"><input type="radio" name="payment_method" value="ご相談">ご相談</label>
         </div>
         <div id="transfer_deadline_area" style="display:none;margin-top:10px">
@@ -630,7 +630,7 @@ function getPaymentMethod() { return document.querySelector('input[name="payment
 document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
   radio.addEventListener('change', () => {
     const area = document.getElementById('transfer_deadline_area');
-    if (getPaymentMethod() === '振込') {
+    if (getPaymentMethod() === '銀行振り込み') {
       area.style.display = 'block';
       if (!document.getElementById('transfer_deadline').value) {
         const d14 = new Date(); d14.setDate(d14.getDate() + 14);
@@ -723,7 +723,7 @@ function nextStep() {
       '<div class="confirm-row"><span class="confirm-label">症状</span><span class="confirm-val">' + sym + '</span></div>' +
       '<div class="confirm-row"><span class="confirm-label">作業</span><span class="confirm-val" style="color:var(--blue)">' + oType + extra + disc + '</span></div>' +
       '<div class="confirm-row"><span class="confirm-label">支払い</span><span class="confirm-val">' + pay +
-        (pay === '振込' ? '<br><span style="font-size:.85rem;color:#666">振込期限: ' + (document.getElementById('transfer_deadline').value || '未設定') + '</span>' : '') +
+        (pay === '銀行振り込み' ? '<br><span style="font-size:.85rem;color:#666">振込期限: ' + (document.getElementById('transfer_deadline').value || '未設定') + '</span>' : '') +
       '</span></div>';
   }
 
@@ -855,7 +855,7 @@ async function doSubmit() {
     services: d.symptoms,
     order_type: orderInfo,
     payment_method: getPaymentMethod(),
-    transfer_deadline: getPaymentMethod() === '振込' ? document.getElementById('transfer_deadline').value : '',
+    transfer_deadline: getPaymentMethod() === '銀行振り込み' ? document.getElementById('transfer_deadline').value : '',
     fee_diagnosis: document.getElementById('fee_diagnosis').value.replace(/[,円]/g, ''),
     cancel_rule: document.getElementById('cancel_rule').value,
     custom_items: customItems.length ? customItems.map(c => c.name + ':' + c.price).join('、') : '',
