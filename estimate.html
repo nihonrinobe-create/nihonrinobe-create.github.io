@@ -108,6 +108,32 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
   <!-- ===== メイン画面 ===== -->
   <div id="main_view">
 
+    <!-- お客様情報（手入力用：パラメータなし時のみ表示） -->
+    <div class="card" id="customer_input_section" style="display:none">
+      <div class="card-title">🏠 お客様情報</div>
+      <div class="field">
+        <label>案件番号</label>
+        <input type="text" id="manual_case_id" placeholder="例：YA-12345678">
+      </div>
+      <div class="field">
+        <label>お客様名 <span class="field-required">※必須</span></label>
+        <input type="text" id="manual_name" placeholder="例：山田太郎">
+      </div>
+      <div class="field">
+        <label>電話番号</label>
+        <input type="tel" id="manual_tel" placeholder="例：09012345678" inputmode="tel">
+      </div>
+      <div class="field">
+        <label>メールアドレス</label>
+        <input type="email" id="manual_email" placeholder="例：yamada@example.com">
+      </div>
+      <div class="field">
+        <label>住所</label>
+        <input type="text" id="manual_address" placeholder="例：東京都板橋区本町1-2-3">
+        <div class="field-hint">※番地・建物名まで一括入力OK</div>
+      </div>
+    </div>
+
     <!-- 担当者番号 -->
     <div class="card">
       <div class="card-title">👤 報告者情報</div>
@@ -347,6 +373,30 @@ function initUI() {
     while (sid.length > 0 && sid.length < 4) sid = '0' + sid;
     document.getElementById('staff_id').value = sid;
   }
+  // パラメータなしの場合、お客様情報入力セクションを表示
+  const hasData = P.case_id || P.name;
+  document.getElementById('customer_input_section').style.display = hasData ? 'none' : 'block';
+  // 既存データがあればマニュアル欄にもプリセット
+  if (P.case_id) document.getElementById('manual_case_id').value = P.case_id;
+  if (P.name)    document.getElementById('manual_name').value = P.name;
+  if (P.tel)     document.getElementById('manual_tel').value = P.tel;
+  if (P.email)   document.getElementById('manual_email').value = P.email;
+  if (P.address) document.getElementById('manual_address').value = P.address;
+}
+
+// 手入力欄からPへ反映（送信前に呼ぶ）
+function syncManualInputs() {
+  const sec = document.getElementById('customer_input_section');
+  if (sec.style.display === 'none') return;
+  const mid = document.getElementById('manual_case_id').value.trim();
+  if (mid) P.case_id = mid;
+  P.name    = document.getElementById('manual_name').value.trim() || P.name;
+  P.tel     = document.getElementById('manual_tel').value.trim() || P.tel;
+  P.email   = document.getElementById('manual_email').value.trim() || P.email;
+  P.address = document.getElementById('manual_address').value.trim() || P.address;
+  // ヘッダー更新
+  document.getElementById('h_case_id').textContent = P.case_id || '未設定';
+  document.getElementById('h_name').textContent = P.name || '未設定';
 }
 
 // 短縮URL: ?c=CASE_ID のみの場合、GASからデータ取得
@@ -517,6 +567,16 @@ function getSelectedItems(prefix) {
 
 // === 送信 ===
 async function submitReport() {
+  // 手入力欄の値をPに反映
+  syncManualInputs();
+
+  // バリデーション：お客様名必須（手入力モード時）
+  if (!P.name) {
+    alert('お客様名を入力してください');
+    document.getElementById('manual_name').focus();
+    return;
+  }
+
   // バリデーション：担当者番号必須
   let staffId = document.getElementById('staff_id').value.trim();
   if (!staffId) {
