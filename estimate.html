@@ -641,6 +641,24 @@ async function generateDoc(type) {
   btn.disabled = true;
 
   const sp = window._submittedPayload || {};
+
+  // 請求書・領収書用のitems構築（診断費＋追加作業）
+  let docItems = [];
+  if (sp.diag_fee) {
+    const diagName = '故障診断' + (P.equipment ? '（' + P.equipment + '）' : '');
+    docItems.push({ name: diagName, price: sp.diag_fee, qty: 1, subtotal: sp.diag_fee });
+  }
+  (sp.today_repairs || []).forEach(r => {
+    docItems.push({ name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty });
+  });
+  // 見積りベースの場合はそちらを使う
+  if (sp.has_estimate && sp.estimate_repairs && sp.estimate_repairs.length > 0) {
+    docItems = sp.estimate_repairs.map(r => ({
+      name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty
+    }));
+  }
+  const docTotal = sp.has_estimate ? (sp.estimate_total || 0) : (sp.today_total || 0);
+
   const payload = {
     form_type: 'generate_doc',
     doc_type: type,
@@ -648,8 +666,8 @@ async function generateDoc(type) {
     name: P.name,
     email: P.email,
     tel: P.tel,
-    items: sp.has_estimate ? sp.estimate_repairs : sp.today_repairs || [],
-    total: sp.has_estimate ? sp.estimate_total : sp.today_total || 0,
+    items: docItems,
+    total: docTotal,
     payment_method: sp.payment_method || '',
     transfer_deadline: sp.transfer_deadline || '',
   };
