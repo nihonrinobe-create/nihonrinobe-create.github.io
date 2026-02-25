@@ -367,7 +367,7 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
               <button type="button" onclick="copyConsent()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:.9rem;font-weight:700;cursor:pointer" id="btn_copy_consent">📋 この文章をコピー</button>
             </div>
             <div style="font-size:.8rem;color:var(--text-sub);margin-bottom:8px">↓ コピーしたら下の欄に貼り付けてください</div>
-            <input type="text" id="consent_text" placeholder="ここに貼り付け" style="font-size:1rem;text-align:center">
+            <input type="text" id="consent_text" placeholder="ここに貼り付け" style="font-size:1rem;width:100%">
           </div>
 
           <!-- ③ プライバシーポリシー -->
@@ -449,20 +449,29 @@ window.onload = async function() {
       if (r.ok) {
         fillCaseId(r.case_id);
         if (r.name)     document.getElementById('c_name').value = r.name;
+        if (r.kana)     document.getElementById('c_kana').value = r.kana;
         if (r.tel)      document.getElementById('c_tel').value = r.tel;
         if (r.email)    document.getElementById('c_email').value = r.email;
-        if (r.address)  document.getElementById('c_address').value = (r.address||'') + ' ' + (r.banchi||'');
+        if (r.zip)      document.getElementById('c_zip').value = r.zip;
+        if (r.address)  document.getElementById('c_address').value = r.address;
+        if (r.banchi)   document.getElementById('c_banchi').value = r.banchi;
+        if (r.building) document.getElementById('c_building').value = r.building;
+        if (r.staff_id) document.getElementById('c_emp_id').value = r.staff_id;
       }
     } catch(e) { console.log('lookup error', e); }
   } else {
     // 通常URL: フルパラメータ
     if (p.get('case_id')) fillCaseId(p.get('case_id'));
     if (shortId) fillCaseId(shortId);
-    if (p.get('emp_id'))  document.getElementById('c_emp_id').value = p.get('emp_id');
-    if (p.get('name'))    document.getElementById('c_name').value = p.get('name');
-    if (p.get('tel'))     document.getElementById('c_tel').value = p.get('tel');
-    if (p.get('email'))   document.getElementById('c_email').value = p.get('email');
-    if (p.get('address')) document.getElementById('c_address').value = p.get('address');
+    if (p.get('emp_id'))   document.getElementById('c_emp_id').value = p.get('emp_id');
+    if (p.get('name'))     document.getElementById('c_name').value = p.get('name');
+    if (p.get('kana'))     document.getElementById('c_kana').value = p.get('kana');
+    if (p.get('tel'))      document.getElementById('c_tel').value = p.get('tel');
+    if (p.get('email'))    document.getElementById('c_email').value = p.get('email');
+    if (p.get('zip'))      document.getElementById('c_zip').value = p.get('zip');
+    if (p.get('address'))  document.getElementById('c_address').value = p.get('address');
+    if (p.get('banchi'))   document.getElementById('c_banchi').value = p.get('banchi');
+    if (p.get('building')) document.getElementById('c_building').value = p.get('building');
   }
   toggleWorkMenus();
 };
