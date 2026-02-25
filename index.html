@@ -795,7 +795,7 @@ function nextStep() {
     document.getElementById('est_date').textContent = '発行日：' + new Date().toLocaleDateString('ja-JP');
     document.getElementById('est_items_body').innerHTML = estRows;
     document.getElementById('est_total').textContent = '¥' + totalAmount.toLocaleString();
-    document.getElementById('fee_diagnosis').value = totalAmount.toLocaleString('ja-JP');
+    document.getElementById('fee_diagnosis').value = totalAmount.toLocaleString('ja-JP') + '円';
   }
 
   // Step6 → 送信
@@ -828,15 +828,38 @@ async function doSubmit() {
 
   const customItems = getCustomItems();
 
+  // 内訳items配列を構築（契約書PDF用）
+  const orderItems = [];
+  const ot = getOrderType();
+  const equip = document.getElementById('c_equipment').value;
+  if (ot === '原因究明作業') {
+    const diagFee = equip.includes('業務用') ? 16500 : 9900;
+    orderItems.push({ name: '故障診断（' + (equip || 'ルームエアコン') + '）', price: diagFee, qty: 1, subtotal: diagFee });
+    getInvOptions().forEach(v => {
+      if (v.price > 0) orderItems.push({ name: v.name, price: v.price, qty: 1, subtotal: v.price });
+    });
+  } else {
+    document.querySelectorAll('.repair-item-row').forEach(row => {
+      const cnt = parseInt(row.querySelector('.count-num').textContent);
+      if (cnt > 0) {
+        const price = parseInt(row.dataset.price);
+        orderItems.push({ name: row.dataset.name, price: price, qty: cnt, subtotal: price * cnt });
+      }
+    });
+  }
+  customItems.forEach(c => orderItems.push({ name: c.name, price: c.price, qty: 1, subtotal: c.subtotal }));
+  if (couponApplied) orderItems.push({ name: 'クーポン割引', price: -3000, qty: 1, subtotal: -3000 });
+
   const payload = {
     ...d,
     services: d.symptoms,
     order_type: orderInfo,
     payment_method: getPaymentMethod(),
     transfer_deadline: getPaymentMethod() === '振込' ? document.getElementById('transfer_deadline').value : '',
-    fee_diagnosis: document.getElementById('fee_diagnosis').value.replace(/,/g, ''),
+    fee_diagnosis: document.getElementById('fee_diagnosis').value.replace(/[,円]/g, ''),
     cancel_rule: document.getElementById('cancel_rule').value,
     custom_items: customItems.length ? customItems.map(c => c.name + ':' + c.price).join('、') : '',
+    order_items: orderItems,
     agree_contract: true,
     agree_electronic: true,
     consent_text: document.getElementById('consent_text').value.trim(),
