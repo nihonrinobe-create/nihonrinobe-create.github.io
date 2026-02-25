@@ -369,6 +369,7 @@ function initUI() {
         P.equipment = r.equipment || P.equipment;
         P.initial_fee = parseInt(r.initial_fee) || P.initial_fee;
         P.staff_id = r.staff_id || P.staff_id;
+        P.order_items = r.order_items || [];
         // 振込の場合、支払い方法を自動設定
         if (r.payment_method === '振込') {
           const radios = document.querySelectorAll('input[name="payment"]');
@@ -642,22 +643,50 @@ async function generateDoc(type) {
 
   const sp = window._submittedPayload || {};
 
-  // 請求書・領収書用のitems構築（診断費＋追加作業）
+  // 請求書・領収書用のitems構築
+  // 1) 注文時の内訳（order_items）があればそれをベースに使う
+  // 2) なければ診断費＋追加作業から構築
   let docItems = [];
-  if (sp.diag_fee) {
-    const diagName = '故障診断' + (P.equipment ? '（' + P.equipment + '）' : '');
-    docItems.push({ name: diagName, price: sp.diag_fee, qty: 1, subtotal: sp.diag_fee });
+
+  if (P.order_items && P.order_items.length > 0) {
+    // 注文時の内訳をそのまま使用
+    docItems = P.order_items.map(r => ({
+      name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty
+    }));
+    // 業務報告で追加した今日の作業があれば追加
+    (sp.today_repairs || []).forEach(r => {
+      // 注文時内訳と重複しない項目だけ追加
+      const exists = docItems.some(d => d.name === r.name);
+      if (!exists) {
+        docItems.push({ name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty });
+      }
+    });
+  } else {
+    // フォールバック：診断費＋追加作業
+    if (sp.diag_fee) {
+      const diagName = '故障診断' + (P.equipment ? '（' + P.equipment + '）' : '');
+      docItems.push({ name: diagName, price: sp.diag_fee, qty: 1, subtotal: sp.diag_fee });
+    }
+    (sp.today_repairs || []).forEach(r => {
+      docItems.push({ name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty });
+    });
   }
-  (sp.today_repairs || []).forEach(r => {
-    docItems.push({ name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty });
-  });
+
   // 見積りベースの場合はそちらを使う
   if (sp.has_estimate && sp.estimate_repairs && sp.estimate_repairs.length > 0) {
     docItems = sp.estimate_repairs.map(r => ({
       name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty
     }));
   }
-  const docTotal = sp.has_estimate ? (sp.estimate_total || 0) : (sp.today_total || 0);
+  // totalはdocItemsの合計から計算（order_items使用時も正確になる）
+  let docTotal = 0;
+  if (sp.has_estimate) {
+    docTotal = sp.estimate_total || 0;
+  } else if (docItems.length > 0) {
+    docTotal = docItems.reduce((sum, r) => sum + (r.subtotal || 0), 0);
+  } else {
+    docTotal = sp.today_total || 0;
+  }
 
   const payload = {
     form_type: 'generate_doc',
