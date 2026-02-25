@@ -189,8 +189,8 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <label>お支払い方法</label>
           <div class="pay-grid">
             <label class="pay-label"><input type="radio" name="payment" value="現金" checked>現金</label>
-            <label class="pay-label"><input type="radio" name="payment" value="カード">カード</label>
-            <label class="pay-label"><input type="radio" name="payment" value="振込">振込</label>
+            <label class="pay-label"><input type="radio" name="payment" value="クレジットカード">クレジットカード</label>
+            <label class="pay-label"><input type="radio" name="payment" value="銀行振り込み">銀行振り込み</label>
             <label class="pay-label"><input type="radio" name="payment" value="後日請求">後日請求</label>
           </div>
           <div id="est_transfer_deadline_area" style="display:none;margin-top:10px">
@@ -371,10 +371,10 @@ function initUI() {
         P.staff_id = r.staff_id || P.staff_id;
         P.order_items = r.order_items || [];
         // 振込の場合、支払い方法を自動設定
-        if (r.payment_method === '振込') {
+        if (r.payment_method === '銀行振り込み') {
           const radios = document.querySelectorAll('input[name="payment"]');
           radios.forEach(rb => {
-            if (rb.value === '振込') {
+            if (rb.value === '銀行振り込み') {
               rb.checked = true;
               rb.dispatchEvent(new Event('change', { bubbles: true }));
             }
@@ -465,7 +465,7 @@ function toggleEstimate() {
 document.querySelectorAll('input[name="payment"]').forEach(radio => {
   radio.addEventListener('change', () => {
     const area = document.getElementById('est_transfer_deadline_area');
-    if (document.querySelector('input[name="payment"]:checked').value === '振込') {
+    if (document.querySelector('input[name="payment"]:checked').value === '銀行振り込み') {
       area.style.display = 'block';
       if (!document.getElementById('est_transfer_deadline').value) {
         const d14 = new Date(); d14.setDate(d14.getDate() + 14);
@@ -582,7 +582,7 @@ async function submitReport() {
     today_total: isKankou ? (P.initial_fee + todayRepairTotal) : 0,
     payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
     transfer_deadline: (() => {
-      if (!isKankou || document.querySelector('input[name="payment"]:checked').value !== '振込') return '';
+      if (!isKankou || document.querySelector('input[name="payment"]:checked').value !== '銀行振り込み') return '';
       const v = document.getElementById('est_transfer_deadline').value;
       if (v) return v;
       // 空なら14日後をデフォルト
