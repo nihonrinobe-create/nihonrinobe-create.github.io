@@ -136,7 +136,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <div class="field-hint">※番地・建物名まで一括入力OK</div>
       </div>
       <div class="field">
-        <label>対象機器</label>
+        <label>対象機器 <span class="field-required">※必須</span></label>
         <select id="manual_equipment" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
           <option value="">-- 選択してください --</option>
           <option value="ルームエアコン">ルームエアコン</option>
@@ -683,6 +683,11 @@ async function submitReport() {
     if (!document.getElementById('manual_address').value.trim()) {
       alert('住所を入力してください');
       document.getElementById('manual_address').focus();
+      return;
+    }
+    if (!document.getElementById('manual_equipment').value) {
+      alert('対象機器を選択してください');
+      document.getElementById('manual_equipment').focus();
       return;
     }
   }
