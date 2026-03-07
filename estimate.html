@@ -116,7 +116,39 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div class="card-title">🏠 お客様情報</div>
       <div class="field">
         <label>案件番号 <span class="field-required">※必須</span></label>
-        <input type="text" id="manual_case_id" placeholder="例：YA-12345678">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <!-- プレフィックス選択 -->
+          <select id="case_prefix" onchange="onPrefixChange()" style="padding:10px 8px;border:2px solid var(--border);border-radius:8px;font-size:1rem;font-weight:700;color:var(--blue);background:#fff;min-width:80px">
+            <option value="YA">YA</option>
+            <option value="CP">CP</option>
+            <option value="HC">HC</option>
+            <option value="HM">HM</option>
+            <option value="EC">EC</option>
+          </select>
+          <!-- YA専用：A〜Zアルファベット選択 -->
+          <select id="case_alpha" style="padding:10px 8px;border:2px solid var(--blue);border-radius:8px;font-size:1rem;font-weight:700;color:var(--blue);background:#e8f2fc;min-width:64px">
+            <option value="">-</option>
+            <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+            <option value="D">D</option><option value="E">E</option><option value="F">F</option>
+            <option value="G">G</option><option value="H">H</option><option value="I">I</option>
+            <option value="J">J</option><option value="K">K</option><option value="L">L</option>
+            <option value="M">M</option><option value="N">N</option><option value="O">O</option>
+            <option value="P">P</option><option value="Q">Q</option><option value="R">R</option>
+            <option value="S">S</option><option value="T">T</option><option value="U">U</option>
+            <option value="V">V</option><option value="W">W</option><option value="X">X</option>
+            <option value="Y">Y</option><option value="Z">Z</option>
+          </select>
+          <span style="font-weight:700;font-size:1.1rem;color:#999">-</span>
+          <!-- 番号入力 -->
+          <input type="text" id="case_number" placeholder="12345678" inputmode="numeric"
+            style="flex:1;min-width:120px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
+        </div>
+        <!-- 組み立て結果プレビュー -->
+        <div id="case_id_preview" style="margin-top:6px;font-size:.8rem;color:var(--text-sub)">
+          案件番号: <span id="case_id_preview_val" style="font-weight:700;color:var(--blue)">---</span>
+        </div>
+        <!-- 隠しフィールド（既存コードとの互換性維持） -->
+        <input type="hidden" id="manual_case_id">
       </div>
       <div class="field">
         <label>お客様名 <span class="field-required">※必須</span></label>
@@ -227,7 +259,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
               <option value="08:00">08:00</option><option value="08:30">08:30</option>
               <option value="09:00" selected>09:00</option><option value="09:30">09:30</option>
               <option value="10:00">10:00</option><option value="10:30">10:30</option>
-              <option value="11:00">11:00</option><option value="11:30">11:30</option>
+              <option value="11:00">11:00</option><option value="11:30">11:31</option>
               <option value="12:00">12:00</option><option value="12:30">12:30</option>
               <option value="13:00">13:00</option><option value="13:30">13:30</option>
               <option value="14:00">14:00</option><option value="14:30">14:30</option>
@@ -265,8 +297,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <!-- 今日の作業 -->
       <div class="section-title">💰 今日の費用</div>
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee">
-          <span style="font-weight:600">故障診断費</span>
+        <!-- ★修理案件の場合は display:none で非表示にする -->
+        <div id="diag_fee_row" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee">
+          <span id="diag_fee_label" style="font-weight:600">故障診断費</span>
           <span style="font-weight:700;color:var(--blue)" id="diag_fee_display">¥9,900</span>
         </div>
       </div>
@@ -431,7 +464,37 @@ const P = {
   initial_fee: parseInt(params.get('initial_fee')) || 9900,
   equipment:   params.get('equipment') || '',
   staff_id:    params.get('staff_id') || '',
+  order_items: [],
+  is_repair:   false,  // ★ 修理案件フラグ
 };
+
+// ★ 修理案件かどうかを判定し、UIを切り替える
+function applyRepairMode() {
+  if (!P.is_repair || !P.order_items || P.order_items.length === 0) return;
+
+  // 故障診断費の行を「修理費」として表示し、金額は0円（修理項目の合計が全額）
+  document.getElementById('diag_fee_label').textContent = '修理費（下記作業合計）';
+  document.getElementById('diag_fee_display').textContent = '¥0';
+  // 診断費行を非表示（修理メニューに全額入るので重複しないよう）
+  document.getElementById('diag_fee_row').style.display = 'none';
+
+  // 修理メニューに order_items の数量をセット
+  P.order_items.forEach(function(item) {
+    const idx = REPAIR_MENU.findIndex(function(m) { return m.name === item.name; });
+    if (idx >= 0) {
+      const qty = parseInt(item.qty) || 1;
+      const span = document.getElementById('today_qty_' + idx);
+      if (span) {
+        span.textContent = qty;
+        const row = document.getElementById('today_row_' + idx);
+        if (row) row.classList.add('active');
+      }
+    }
+  });
+
+  // 合計を再計算
+  recalc();
+}
 
 // UI初期化関数
 function initUI() {
@@ -449,17 +512,13 @@ function initUI() {
   document.getElementById('customer_input_section').style.display = hasData ? 'none' : 'block';
 
   // ステータスオプション制御
-  // パラメータあり → 完工 + 予約（見積あり）のみ
-  // パラメータなし → 全部表示
   if (hasData) {
     document.getElementById('opt_reserve_no').style.display = 'none';
     document.getElementById('opt_loss').style.display = 'none';
     document.getElementById('opt_cancel').style.display = 'none';
     document.getElementById('opt_hold').style.display = 'none';
-    // グリッドを2列に調整
     document.getElementById('status_grid').style.gridTemplateColumns = '1fr 1fr';
   } else {
-    // 全表示（3列）
     document.getElementById('status_grid').style.gridTemplateColumns = '1fr 1fr 1fr';
   }
   // 既存データがあればマニュアル欄にもプリセット
@@ -468,20 +527,50 @@ function initUI() {
   if (P.tel)     document.getElementById('manual_tel').value = P.tel;
   if (P.email)   document.getElementById('manual_email').value = P.email;
   if (P.address) document.getElementById('manual_address').value = P.address;
+
+  // ★ 修理案件モードを適用
+  applyRepairMode();
+}
+
+// === 案件番号：プレフィックス切替 ===
+function onPrefixChange() {
+  const prefix = document.getElementById('case_prefix').value;
+  const alphaEl = document.getElementById('case_alpha');
+  alphaEl.style.display = (prefix === 'YA') ? '' : 'none';
+  if (prefix !== 'YA') alphaEl.value = '';
+  updateCaseIdPreview();
+}
+
+function buildCaseId() {
+  const prefix = document.getElementById('case_prefix').value;
+  const alpha  = document.getElementById('case_alpha').value;
+  const num    = document.getElementById('case_number').value.trim();
+  if (!num) return '';
+  if (prefix === 'YA') {
+    return alpha ? 'YA' + alpha + '-' + num : 'YA-' + num;
+  }
+  return prefix + '-' + num;
+}
+
+function updateCaseIdPreview() {
+  const id = buildCaseId();
+  document.getElementById('case_id_preview_val').textContent = id || '---';
+  document.getElementById('manual_case_id').value = id;
 }
 
 // 手入力欄からPへ反映（送信前に呼ぶ）
 function syncManualInputs() {
   const sec = document.getElementById('customer_input_section');
   if (sec.style.display === 'none') return;
-  const mid = document.getElementById('manual_case_id').value.trim();
+  // 案件番号を組み立てて取得
+  updateCaseIdPreview();
+  const mid = buildCaseId();
   if (mid) P.case_id = mid;
   P.name      = document.getElementById('manual_name').value.trim() || P.name;
   P.tel       = document.getElementById('manual_tel').value.trim() || P.tel;
   P.email     = document.getElementById('manual_email').value.trim() || P.email;
   P.address   = document.getElementById('manual_address').value.trim() || P.address;
   P.equipment = document.getElementById('manual_equipment').value || P.equipment;
-  // ヘッダー更新
   document.getElementById('h_case_id').textContent = P.case_id || '未設定';
   document.getElementById('h_name').textContent = P.name || '未設定';
 }
@@ -503,9 +592,16 @@ function syncManualInputs() {
         P.equipment = r.equipment || P.equipment;
         P.initial_fee = parseInt(r.initial_fee) || P.initial_fee;
         P.staff_id = r.staff_id || P.staff_id;
-        P.order_items = r.order_items || [];
         P.payment_method = r.payment_method || '';
-        // 支払い方法を自動設定（全種類対応）
+
+        // ★ order_items があれば修理案件フラグを立てる
+        if (r.order_items && r.order_items.length > 0) {
+          P.order_items = r.order_items;
+          P.is_repair = true;
+          P.initial_fee = 0; // 修理案件は診断費0扱い（修理項目の合計が全額）
+        }
+
+        // 支払い方法を自動設定
         if (r.payment_method) {
           const radios = document.querySelectorAll('input[name="payment"]');
           radios.forEach(rb => {
@@ -514,7 +610,6 @@ function syncManualInputs() {
               rb.dispatchEvent(new Event('change', { bubbles: true }));
             }
           });
-          // 銀行振り込みの場合、振込期限を上書き
           if (r.payment_method === '銀行振り込み' && r.transfer_deadline) {
             document.getElementById('est_transfer_deadline').value = r.transfer_deadline;
           }
@@ -572,6 +667,7 @@ function recalc() {
     const qty = parseInt(document.getElementById('today_qty_' + i).textContent);
     todayRepair += item.price * qty;
   });
+  // ★ 修理案件は initial_fee=0 なので、修理項目合計がそのまま今日の合計になる
   const todayTotal = P.initial_fee + todayRepair;
   document.getElementById('today_total').textContent = '¥' + todayTotal.toLocaleString();
 
@@ -622,20 +718,17 @@ function onStatusChange() {
     const isHold = (status === '不通・保留');
     const isReserve = isReserveEst || isReserveNo;
 
-    // セクション表示切替
     document.getElementById('section_kankou').classList.toggle('hidden', !isKankou);
     document.getElementById('section_reserve_est').classList.toggle('hidden', !isReserveEst);
     document.getElementById('section_reason').classList.toggle('hidden', !(isLoss || isCancel));
     document.getElementById('section_reserve_datetime').classList.toggle('hidden', !isReserve);
 
-    // 通知メッセージ
     document.getElementById('notice_loss').classList.toggle('hidden', !isLoss);
     document.getElementById('notice_cancel').classList.toggle('hidden', !isCancel);
     document.getElementById('notice_reserve_est').classList.toggle('hidden', !isReserveEst);
     document.getElementById('notice_reserve_no').classList.toggle('hidden', !isReserveNo);
     document.getElementById('notice_hold').classList.toggle('hidden', !isHold);
 
-    // ボタンの見た目
     const btn = document.getElementById('btn_submit');
     btn.className = 'btn-submit';
     if (isKankou) { btn.classList.add('btn-primary'); btn.textContent = '完了報告を送信'; }
@@ -659,15 +752,13 @@ function getSelectedItems(prefix) {
 
 // === 送信 ===
 async function submitReport() {
-  // 手入力欄の値をPに反映
   syncManualInputs();
 
-  // バリデーション：手入力モード時の必須チェック
   const isManualMode = document.getElementById('customer_input_section').style.display !== 'none';
   if (isManualMode) {
-    if (!document.getElementById('manual_case_id').value.trim()) {
-      alert('案件番号を入力してください');
-      document.getElementById('manual_case_id').focus();
+    if (!buildCaseId()) {
+      alert('案件番号の番号部分を入力してください');
+      document.getElementById('case_number').focus();
       return;
     }
     if (!document.getElementById('manual_name').value.trim()) {
@@ -692,20 +783,17 @@ async function submitReport() {
     }
   }
 
-  // バリデーション：お客様名必須
   if (!P.name) {
     alert('お客様名を入力してください');
     return;
   }
 
-  // バリデーション：担当者番号必須
   let staffId = document.getElementById('staff_id').value.trim();
   if (!staffId) {
     alert('担当者番号を入力してください');
     document.getElementById('staff_id').focus();
     return;
   }
-  // 0埋め4桁に統一
   while (staffId.length > 0 && staffId.length < 4) staffId = '0' + staffId;
 
   const btn = document.getElementById('btn_submit');
@@ -718,19 +806,18 @@ async function submitReport() {
   const isReserveNo = (status === '予約（見積なし）');
   const isReserve = isReserveEst || isReserveNo;
 
-  // 予約時：日付必須
   if (isReserve && !document.getElementById('reserve_date').value) {
     alert('予約日を入力してください');
     document.getElementById('reserve_date').focus();
     btn.disabled = false;
     btn.textContent = isReserveEst ? '予約＋見積書を送信' : '予約として報告';
     return;
-  }  // 今日の作業データ
+  }
+
   const todayItems = isKankou ? getSelectedItems('today') : [];
   let todayRepairTotal = 0;
   todayItems.forEach(it => todayRepairTotal += it.subtotal);
 
-  // 見積書データ
   let hasEstimate = false;
   let estItems = [];
   let estTotal = 0;
@@ -751,6 +838,9 @@ async function submitReport() {
     estNote = document.getElementById('res_est_note').value;
   }
 
+  // ★ 修理案件の場合、diag_fee は 0 で送信
+  const diagFee = P.is_repair ? 0 : (isKankou ? P.initial_fee : 0);
+
   const payload = {
     form_type: 'estimate',
     contract_status: status,
@@ -763,33 +853,28 @@ async function submitReport() {
     staff_id: staffId,
     visit_date: document.getElementById('visit_date').value,
 
-    // 今日の分（完工時のみ有効）
-    diag_fee: isKankou ? P.initial_fee : 0,
+    diag_fee: diagFee,
     today_repairs: todayItems,
     today_repair_total: todayRepairTotal,
-    today_total: isKankou ? (P.initial_fee + todayRepairTotal) : 0,
+    today_total: isKankou ? (diagFee + todayRepairTotal) : 0,
     payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
     transfer_deadline: (() => {
       if (!isKankou || document.querySelector('input[name="payment"]:checked').value !== '銀行振り込み') return '';
       const v = document.getElementById('est_transfer_deadline').value;
       if (v) return v;
-      // 空なら14日後をデフォルト
       const d14 = new Date(); d14.setDate(d14.getDate() + 14);
       return d14.toISOString().split('T')[0];
     })(),
 
-    // 見積り
     has_estimate: hasEstimate,
     estimate_repairs: estItems,
     estimate_total: estTotal,
     estimate_expiry: estExpiry,
     estimate_note: estNote,
 
-    // メモ・理由
     staff_memo: document.getElementById('staff_memo').value,
     cancel_reason: document.getElementById('loss_reason') ? document.getElementById('loss_reason').value : '',
 
-    // 予約日時
     reserve_date: document.getElementById('reserve_date').value || '',
     reserve_time_start: document.getElementById('reserve_time_start').value || '',
     reserve_time_end: document.getElementById('reserve_time_end').value || '',
@@ -803,11 +888,9 @@ async function submitReport() {
     console.log('送信完了（レスポンス解析失敗）');
   }
 
-  // 完了画面
   document.getElementById('main_view').classList.add('hidden');
   document.getElementById('done_view').classList.remove('hidden');
 
-  // 完了メッセージ
   const doneMsg = document.getElementById('done_msg');
   if (status === '完工') doneMsg.innerHTML = '✅ 完了報告を送信しました';
   else if (status === '失注') doneMsg.innerHTML = '❌ 失注として記録しました';
@@ -816,16 +899,13 @@ async function submitReport() {
   else if (status === '不通・保留') doneMsg.innerHTML = '⏸️ 不通・保留として記録しました';
   else doneMsg.innerHTML = '📅 予約として記録しました（後追いアラート対象）';
 
-  // 売上管理エラー表示
   if (gasResult.uriage_error) {
     doneMsg.innerHTML += '<br><span style="color:red;font-size:.85rem">⚠ 売上管理シート: ' + gasResult.uriage_error + '</span>';
   }
 
-  // 書類発行ボタンの表示制御
   const showDocSection = hasEstimate || isKankou;
   document.getElementById('doc_section').style.display = showDocSection ? 'block' : 'none';
 
-  // payloadを保存
   window._submittedPayload = payload;
 }
 
@@ -837,26 +917,19 @@ async function generateDoc(type) {
 
   const sp = window._submittedPayload || {};
 
-  // 請求書・領収書用のitems構築
-  // 1) 注文時の内訳（order_items）があればそれをベースに使う
-  // 2) なければ診断費＋追加作業から構築
   let docItems = [];
 
   if (P.order_items && P.order_items.length > 0) {
-    // 注文時の内訳をそのまま使用
     docItems = P.order_items.map(r => ({
       name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty
     }));
-    // 業務報告で追加した今日の作業があれば追加
     (sp.today_repairs || []).forEach(r => {
-      // 注文時内訳と重複しない項目だけ追加
       const exists = docItems.some(d => d.name === r.name);
       if (!exists) {
         docItems.push({ name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty });
       }
     });
   } else {
-    // フォールバック：診断費＋追加作業
     if (sp.diag_fee) {
       const diagName = '故障診断' + (P.equipment ? '（' + P.equipment + '）' : '');
       docItems.push({ name: diagName, price: sp.diag_fee, qty: 1, subtotal: sp.diag_fee });
@@ -866,13 +939,12 @@ async function generateDoc(type) {
     });
   }
 
-  // 見積りベースの場合はそちらを使う
   if (sp.has_estimate && sp.estimate_repairs && sp.estimate_repairs.length > 0) {
     docItems = sp.estimate_repairs.map(r => ({
       name: r.name, price: r.price, qty: r.qty, subtotal: r.subtotal || r.price * r.qty
     }));
   }
-  // totalはdocItemsの合計から計算（order_items使用時も正確になる）
+
   let docTotal = 0;
   if (sp.has_estimate) {
     docTotal = sp.estimate_total || 0;
@@ -908,6 +980,19 @@ async function generateDoc(type) {
   result.textContent = '請求書をメールに送信しました';
   result.style.color = 'var(--green)';
 }
+
+// === 案件番号入力のリアルタイムプレビュー初期化 ===
+(function initCaseIdListeners() {
+  // DOM生成後に実行されるよう少し遅延
+  setTimeout(function() {
+    const numEl = document.getElementById('case_number');
+    const alphaEl = document.getElementById('case_alpha');
+    if (numEl) numEl.addEventListener('input', updateCaseIdPreview);
+    if (alphaEl) alphaEl.addEventListener('change', updateCaseIdPreview);
+    // 初期状態（YA選択中）でアルファベットを表示
+    onPrefixChange();
+  }, 100);
+})();
 </script>
 </body>
 </html>
