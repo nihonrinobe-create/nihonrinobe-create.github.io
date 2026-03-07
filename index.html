@@ -131,8 +131,8 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
               <option value="YA">YA</option>
               <option value="HM">HM</option>
               <option value="CP">CP</option>
-              <option value="HC">HC</option>
               <option value="EC">EC</option>
+              <option value="HC">HC</option>
             </select>
             <!-- YA専用：A〜Z -->
             <select id="c_case_alpha" onchange="updateIndexCaseIdPreview()">
@@ -148,7 +148,7 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
               <option value="Y">Y</option><option value="Z">Z</option>
             </select>
             <span class="case-id-sep">-</span>
-            <input type="text" id="c_case_num" placeholder="例: 12345678" inputmode="numeric" oninput="updateIndexCaseIdPreview()">
+            <input type="text" id="c_case_num" placeholder="例: 20260212001" inputmode="numeric" oninput="updateIndexCaseIdPreview()">
           </div>
           <div class="case-id-preview">
             案件番号: <span id="c_case_id_preview">---</span>
@@ -594,7 +594,8 @@ function toggleWorkMenus() {
   const isRepair = document.querySelector('input[name="order_type"][value="修理"]');
   const repair = isRepair && isRepair.checked;
   document.getElementById('repair_options_area').style.display = repair ? 'block' : 'none';
-  document.getElementById('investigation_options_area').style.display = repair ? 'none' : 'block';
+  // 追加条件は原因究明・修理どちらでも常に表示
+  document.getElementById('investigation_options_area').style.display = 'block';
 }
 
 // === 修理カウンター ===
