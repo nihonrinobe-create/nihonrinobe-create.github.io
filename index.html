@@ -210,14 +210,14 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
     <div class="card">
       <div class="card-title">🔧 ご依頼内容</div>
       <div class="field" id="f_equipment">
-        <label>対象機器 <span style="color:red;font-size:.8rem">※必須</span></label>
+        <label>作業対象 <span style="color:red;font-size:.8rem">※必須</span></label>
         <select id="c_equipment">
           <option value="">選択してください</option>
           <option value="ルームエアコン">ルームエアコン</option>
           <option value="業務用エアコン">業務用エアコン</option>
           <option value="その他">その他</option>
         </select>
-        <div class="error-msg">対象機器を選択してください</div>
+        <div class="error-msg">作業対象を選択してください</div>
       </div>
       <div class="field" id="f_symptom">
         <label>症状（複数可） <span style="color:red;font-size:.8rem">※必須</span></label>
@@ -468,7 +468,7 @@ function onIndexPrefixChange() {
   if (prefix === 'EC') {
     equipOptions = ['エコキュート', 'ガス給湯器', 'その他'];
   } else if (prefix === 'HC') {
-    equipOptions = ['その他'];
+    equipOptions = ['ハウスクリーニング', 'その他'];
   } else {
     // YA / HM / CP
     equipOptions = ['ルームエアコン', '業務用エアコン', 'その他'];
@@ -795,7 +795,7 @@ function validateStep(step) {
   }
   if (step === 2) {
     ['f_equipment','f_symptom'].forEach(clearFieldError);
-    if (!document.getElementById('c_equipment').value) { setFieldError('f_equipment','対象機器を選択してください'); ok=false; }
+    if (!document.getElementById('c_equipment').value) { setFieldError('f_equipment','作業対象を選択してください'); ok=false; }
     const prefix = document.getElementById('c_case_prefix').value;
     // HC-は症状不要
     if (prefix !== 'HC' && getSymptoms().length === 0) { setFieldError('f_symptom','症状を1つ以上選択してください'); ok=false; }
