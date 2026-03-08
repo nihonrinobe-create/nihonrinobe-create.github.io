@@ -274,9 +274,14 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
       <div class="field">
         <label>追加項目（自由入力）</label>
         <div id="custom_items_area">
-          <div class="custom-item-row" style="display:flex;gap:6px;margin-bottom:6px">
-            <input type="text" class="custom-name" placeholder="項目名" style="flex:2">
-            <input type="number" class="custom-price" placeholder="金額（税込）" inputmode="numeric" style="flex:1">
+          <div class="custom-item-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
+            <input type="text" class="custom-name" placeholder="項目名" style="flex:2;min-width:100px">
+            <input type="number" class="custom-price" placeholder="金額（税込）" inputmode="numeric" style="flex:1;min-width:90px">
+            <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+              <button type="button" class="btn-circle btn-minus" onclick="customQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>
+              <span class="custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>
+              <button type="button" class="btn-circle btn-plus" onclick="customQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>
+            </div>
           </div>
         </div>
         <button type="button" onclick="addCustomItem()" style="background:#eee;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:.85rem;cursor:pointer;margin-top:4px">＋ 項目を追加</button>
@@ -690,12 +695,26 @@ function changeCount(btn, delta) {
 }
 
 // === 追加項目 ===
+function customQtyChange(btn, delta) {
+  const span = btn.parentElement.querySelector('.custom-qty');
+  let n = parseInt(span.textContent) + delta;
+  if (n < 1) n = 1;
+  span.textContent = n;
+}
+
 function addCustomItem() {
   const area = document.getElementById('custom_items_area');
   const div = document.createElement('div');
   div.className = 'custom-item-row';
-  div.style = 'display:flex;gap:6px;margin-bottom:6px';
-  div.innerHTML = '<input type="text" class="custom-name" placeholder="項目名" style="flex:2"><input type="number" class="custom-price" placeholder="金額（税込）" inputmode="numeric" style="flex:1"><button type="button" onclick="this.parentElement.remove()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">×</button>';
+  div.style = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
+  div.innerHTML = '<input type="text" class="custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">'
+    + '<input type="number" class="custom-price" placeholder="金額（税込）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">'
+    + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+    + '<button type="button" onclick="customQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
+    + '<span class="custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>'
+    + '<button type="button" onclick="customQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>'
+    + '</div>'
+    + '<button type="button" onclick="this.parentElement.remove()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">×</button>';
   area.appendChild(div);
 }
 
@@ -704,7 +723,8 @@ function getCustomItems() {
   document.querySelectorAll('.custom-item-row').forEach(row => {
     const name = row.querySelector('.custom-name').value.trim();
     const price = parseInt(row.querySelector('.custom-price').value) || 0;
-    if (name && price > 0) items.push({ name, price, qty: 1, subtotal: price });
+    const qty = parseInt(row.querySelector('.custom-qty').textContent) || 1;
+    if (name && price > 0) items.push({ name, price, qty, subtotal: price * qty });
   });
   return items;
 }
