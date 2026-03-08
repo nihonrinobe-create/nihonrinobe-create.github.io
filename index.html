@@ -377,7 +377,7 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
       <div class="emergency-box">
         <label class="emergency-label">
           <input type="checkbox" id="req_sameday">
-          <span>緊急事態につき当日の工事を希望します</span>
+          <span id="sameday_label">緊急事態につき当日の工事を希望します</span>
         </label>
       </div>
 
@@ -516,6 +516,14 @@ function onIndexPrefixChange() {
     orderTypeGrid.style.display  = '';
     orderTypeFixed.style.display = 'none';
     toggleWorkMenus();
+  }
+
+  // ===== 緊急テキスト切替 =====
+  const samedayLabel = document.getElementById('sameday_label');
+  if (samedayLabel) {
+    samedayLabel.textContent = (prefix === 'HC')
+      ? '緊急事態につき当日の清掃作業を希望します'
+      : '緊急事態につき当日の工事を希望します';
   }
 }
 
@@ -936,7 +944,8 @@ function nextStep() {
         }
       });
     } else {
-      feeLabel.textContent = '修理作業費用（目安・税込）';
+      const prefix = document.getElementById('c_case_prefix').value;
+      feeLabel.textContent = (prefix === 'HC') ? '清掃作業費用（目安・税込）' : '修理作業費用（目安・税込）';
       document.querySelectorAll('.repair-item-row').forEach(row => {
         const cnt = parseInt(row.querySelector('.count-num').textContent);
         if (cnt > 0) {
