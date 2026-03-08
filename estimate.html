@@ -717,10 +717,13 @@ function syncManualInputs() {
         P.staff_id = r.staff_id || P.staff_id;
         P.payment_method = r.payment_method || '';
 
-        // ★ order_items があり、かつHC-/EC-以外なら修理案件フラグを立てる
+        // ★ order_items があり、かつHC-/EC-以外で、診断費でないものが含まれていれば修理案件フラグを立てる
         const pfx = (r.case_id || P.case_id || '').split('-')[0].toUpperCase();
-        if (r.order_items && r.order_items.length > 0 && pfx !== 'HC' && pfx !== 'EC') {
-          P.order_items = r.order_items;
+        const repairItems = (r.order_items || []).filter(function(it) {
+          return it.name && !it.name.startsWith('故障診断');
+        });
+        if (repairItems.length > 0 && pfx !== 'HC' && pfx !== 'EC') {
+          P.order_items = repairItems;
           P.is_repair = true;
           P.initial_fee = 0; // 修理案件は診断費0扱い（修理項目の合計が全額）
         }
