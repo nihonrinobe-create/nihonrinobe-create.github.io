@@ -446,6 +446,16 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
 <script>
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGpm0_a_TTIrudeuq8NE27LVQmdYMA_zIaGG1lcNg0u-y6FsfK77A/exec';
 
+// 注文ごとにユニークな契約IDを生成（例: AC-20260309010742-UQD4）
+function generateContractId() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const ts = now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) +
+             pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+  const rand = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4).padEnd(4, '0');
+  return 'AC-' + ts + '-' + rand;
+}
+
 let currentStep = 1;
 let couponApplied = false;
 const CONSENT_PHRASE = '契約書面等をPDFメールで受領することに同意します';
@@ -1051,11 +1061,14 @@ async function doSubmit() {
       }
     });
   }
-  customItems.forEach(c => orderItems.push({ name: c.name, price: c.price, qty: 1, subtotal: c.subtotal }));
+  customItems.forEach(c => orderItems.push({ name: c.name, price: c.price, qty: c.qty || 1, subtotal: c.subtotal }));
   if (couponApplied) orderItems.push({ name: 'クーポン割引', price: -3000, qty: 1, subtotal: -3000 });
+
+  const contractId = generateContractId();
 
   const payload = {
     ...d,
+    contract_id: contractId,
     services: d.symptoms,
     order_type: orderInfo,
     payment_method: getPaymentMethod(),
@@ -1078,8 +1091,8 @@ async function doSubmit() {
   currentStep = 7;
   updateUI();
 
-  // 修正後（contract_idをGASのレスポンスから受け取る）
-const estUrl = 'https://nihonrinobe-create.github.io/estimate.html?c=' + encodeURIComponent(contractId || d.case_id);
+  const estUrl = 'https://nihonrinobe-create.github.io/estimate.html?c=' + encodeURIComponent(contractId);
+  const repUrl = 'https://nihonrinobe-create.github.io/index.html?c=' + encodeURIComponent(d.case_id) + '&repeat=1';
   document.getElementById('report_link').href = estUrl;
   document.getElementById('report_link_area').style.display = 'block';
 }
