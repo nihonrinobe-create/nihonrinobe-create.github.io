@@ -780,15 +780,20 @@ function syncManualInputs() {
 
         // ★ order_items から診断費以外を取り出す（HC-/EC-も含め常にセット）
         const pfx = (r.case_id || P.case_id || '').split('-')[0].toUpperCase();
+        const hasDiagFee = (r.order_items || []).some(function(it) {
+          return it.name && it.name.startsWith('故障診断');
+        });
         const repairItems = (r.order_items || []).filter(function(it) {
           return it.name && !it.name.startsWith('故障診断');
         });
         if (repairItems.length > 0) {
           P.order_items = repairItems;
-          if (pfx !== 'HC' && pfx !== 'EC') {
+          if (pfx !== 'HC' && pfx !== 'EC' && !hasDiagFee) {
+            // 診断費なし = 修理案件 → P.is_repair=true にする
             P.is_repair = true;
             P.initial_fee = 0;
           }
+          // 診断案件（hasDiagFee=true）は P.initial_fee を保持し P.is_repair=false のまま
         }
 
         // 支払い方法を自動設定
@@ -955,31 +960,28 @@ async function applyEstCoupon() {
 
 // === 合計再計算 ===
 function recalc() {
-  // 追加条件（高所危険作業など）
-  let invTotal = 0;
+  // 追加条件（高所危険作業など）- 入力値は税抜のまま使う
+  let invSubEx = 0;
   document.querySelectorAll('#inv_options_area .inv-est-price').forEach(function(input) {
-    const raw = parseInt(input.value) || 0;
-    if (raw > 0) invTotal += Math.round(raw * (1 + TAX_RATE));
+    invSubEx += parseInt(input.value) || 0;
   });
 
-  // 修理メニュー（非表示または未生成の場合はスキップ）
-  let todayRepair = 0;
+  // 修理メニュー - REPAIR_MENU.price は税抜
+  let repairSubEx = 0;
   REPAIR_MENU.forEach((item, i) => {
     const el = document.getElementById('today_qty_' + i);
     if (!el) return;
     const qty = parseInt(el.textContent) || 0;
-    todayRepair += Math.round(item.price * (1 + TAX_RATE)) * qty;
+    repairSubEx += item.price * qty;
   });
 
-  // 追加項目（自由入力）
-  let customTotal = 0;
-  getCustomEstItems().forEach(it => { customTotal += it.subtotal; });
+  // 追加項目（自由入力）- getCustomEstItems() は税込で返すので税抜に戻す
+  let customSubEx = 0;
+  getCustomEstItems().forEach(it => { customSubEx += Math.round(it.subtotal / (1 + TAX_RATE)); });
 
-  // 診断費 or 修理費 + 追加条件 + 修理メニュー + 自由入力 の合計
-  // 税抜ベースで計算（P.initial_feeはすでに税抜）
+  // 全て税抜で合算（P.initial_fee も税抜）
   const todaySubEx = Math.max(0,
-    Math.round((P.initial_fee + todayRepair + invTotal + customTotal) / (1 + TAX_RATE))
-    - (couponDiscount || 0)
+    P.initial_fee + repairSubEx + invSubEx + customSubEx - (couponDiscount || 0)
   );
   const todayTaxAmt = Math.round(todaySubEx * TAX_RATE);
   const todayTotal = todaySubEx + todayTaxAmt;
@@ -1098,7 +1100,10 @@ function getSelectedItems(prefix) {
   const items = [];
   REPAIR_MENU.forEach((item, i) => {
     const qty = parseInt(document.getElementById(prefix + '_qty_' + i).textContent);
-    if (qty > 0) items.push({ name: item.name, price: item.price, qty: qty, subtotal: item.price * qty });
+    if (qty > 0) {
+      const taxInc = Math.round(item.price * (1 + TAX_RATE));
+      items.push({ name: item.name, price: taxInc, qty: qty, subtotal: taxInc * qty });
+    }
   });
   return items;
 }
