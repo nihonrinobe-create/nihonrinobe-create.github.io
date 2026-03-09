@@ -326,25 +326,25 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <div id="inv_options_area">
           <div class="inv-est-row" data-inv-name="高所危険作業" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
             <span style="font-size:.9rem;font-weight:600;flex:1">高所危険作業</span>
-            <input type="number" class="inv-est-price" placeholder="金額（税込）" inputmode="numeric"
+            <input type="number" class="inv-est-price" placeholder="金額（税抜）" inputmode="numeric"
               style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right"
               oninput="recalc()">
           </div>
           <div class="inv-est-row" data-inv-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
             <span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span>
-            <input type="number" class="inv-est-price" placeholder="金額（税込）" inputmode="numeric"
+            <input type="number" class="inv-est-price" placeholder="金額（税抜）" inputmode="numeric"
               style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right"
               oninput="recalc()">
           </div>
           <div class="inv-est-row" data-inv-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
             <span style="font-size:.9rem;font-weight:600;flex:1">室外機特殊設置</span>
-            <input type="number" class="inv-est-price" placeholder="金額（税込）" inputmode="numeric"
+            <input type="number" class="inv-est-price" placeholder="金額（税抜）" inputmode="numeric"
               style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right"
               oninput="recalc()">
           </div>
           <div class="inv-est-row" data-inv-name="電気系統調査" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
             <span style="font-size:.9rem;font-weight:600;flex:1">電気系統調査</span>
-            <input type="number" class="inv-est-price" placeholder="金額（税込）" inputmode="numeric"
+            <input type="number" class="inv-est-price" placeholder="金額（税抜）" inputmode="numeric"
               style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right"
               oninput="recalc()">
           </div>
@@ -365,7 +365,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <div id="custom_est_items_area">
           <div class="custom-est-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
             <input type="text" class="custom-est-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem">
-            <input type="number" class="custom-est-price" placeholder="金額（税込）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
+            <input type="number" class="custom-est-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
             <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
               <button type="button" onclick="customEstQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>
               <span class="custom-est-qty" style="font-weight:700;width:20px;text-align:center">1</span>
@@ -376,7 +376,22 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <button type="button" onclick="addCustomEstItem()" style="background:#eee;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:.85rem;cursor:pointer;margin-top:4px">＋ 項目を追加</button>
       </div>
 
-      <div class="total-box">
+      <div class="card" style="margin-top:8px">
+        <label style="font-weight:600;font-size:.9rem">クーポンコード / 紹介コード</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <input type="text" id="est_coupon_code" placeholder="コードを入力" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
+          <button type="button" onclick="applyEstCoupon()" style="padding:10px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer">適用</button>
+        </div>
+        <div id="est_coupon_result" style="font-size:.85rem;margin-top:5px;font-weight:bold"></div>
+      </div>
+
+            <div class="total-box">
+        <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#555;margin-bottom:4px">
+          <span>合計（税抜）</span><span id="today_subtotal_ex">¥0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#555;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
+          <span>消費税（<span id="today_tax_rate_label">10</span>%）</span><span id="today_tax_amount">¥0</span>
+        </div>
         <div class="total-label">今日のお支払い合計（税込）</div>
         <div class="total-amount" id="today_total">¥9,900</div>
       </div>
@@ -416,6 +431,12 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
             <!-- JSで生成 -->
           </div>
           <div class="estimate-total-box">
+            <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;margin-bottom:4px">
+              <span>合計（税抜）</span><span id="est_subtotal_ex">¥0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
+              <span>消費税（<span id="est_tax_rate_label">10</span>%）</span><span id="est_tax_amount">¥0</span>
+            </div>
             <div class="estimate-total-label">見積り合計（税込）</div>
             <div class="estimate-total-amount" id="est_total">¥0</div>
           </div>
@@ -446,7 +467,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <div id="resest_custom_items_area">
           <div class="custom-est-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
             <input type="text" class="resest-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem">
-            <input type="number" class="resest-custom-price" placeholder="金額（税込）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
+            <input type="number" class="resest-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
             <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
               <button type="button" onclick="resestCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>
               <span class="resest-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>
@@ -458,6 +479,12 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       </div>
 
       <div class="estimate-total-box">
+        <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;margin-bottom:4px">
+          <span>合計（税抜）</span><span id="res_est_subtotal_ex">¥0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
+          <span>消費税（<span id="res_est_tax_rate_label">10</span>%）</span><span id="res_est_tax_amount">¥0</span>
+        </div>
         <div class="estimate-total-label">見積り合計（税込）</div>
         <div class="estimate-total-amount" id="res_est_total">¥0</div>
       </div>
@@ -525,17 +552,20 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGpm0_a_TTIrudeuq8NE27LVQmdYMA_zIaGG1lcNg0u-y6FsfK77A/exec';
 
 // === 修理メニュー定義 ===
+const TAX_RATE = 0.10; // 消費税率（変更時はここだけ修正）
+let couponDiscount = 0; // 税抜割引額（0=未適用）
+
 const REPAIR_MENU = [
-  { name: '冷媒ガス注入（500gまで）', price: 29700 },
-  { name: '冷媒ガス追加（100g）', price: 3300 },
-  { name: '真空引き', price: 17600 },
-  { name: 'フレア加工・バルブコア交換', price: 17600 },
-  { name: '水漏れ修復', price: 28600 },
-  { name: '四方弁動作不良解消', price: 26400 },
-  { name: '電源部再接続', price: 26400 },
-  { name: 'エアコン標準取付', price: 28600 },
-  { name: 'エアコン取り外し', price: 8800 },
-  { name: '穴開け工事', price: 26400 },
+  { name: '冷媒ガス注入（500gまで）', price: 27000 },
+  { name: '冷媒ガス追加（100g）', price: 3000 },
+  { name: '真空引き', price: 16000 },
+  { name: 'フレア加工・バルブコア交換', price: 16000 },
+  { name: '水漏れ修復', price: 26000 },
+  { name: '四方弁動作不良解消', price: 24000 },
+  { name: '電源部再接続', price: 24000 },
+  { name: 'エアコン標準取付', price: 26000 },
+  { name: 'エアコン取り外し', price: 8000 },
+  { name: '穴開け工事', price: 24000 },
 ];
 
 // === URLパラメータから情報取得 ===
@@ -546,7 +576,7 @@ const P = {
   email:       params.get('email') || '',
   tel:         params.get('tel') || '',
   address:     params.get('address') || '',
-  initial_fee: parseInt(params.get('initial_fee')) || 9900,
+  initial_fee: parseInt(params.get('initial_fee')) || 9000,
   equipment:   params.get('equipment') || '',
   staff_id:    params.get('staff_id') || '',
   order_items: [],
@@ -836,7 +866,7 @@ function getCustomEstItems() {
     const name = row.querySelector('.custom-est-name').value.trim();
     const price = parseInt(row.querySelector('.custom-est-price').value) || 0;
     const qty = parseInt(row.querySelector('.custom-est-qty').textContent) || 1;
-    if (name && price > 0) items.push({ name: name, price: price, qty: qty, subtotal: price * qty });
+    if (name && price > 0) { const taxInc = Math.round(price * (1 + TAX_RATE)); items.push({ name: name, price: taxInc, qty: qty, subtotal: taxInc * qty }); }
   });
   return items;
 }
@@ -848,7 +878,7 @@ function addCustomEstItem() {
   div.className = 'custom-est-row';
   div.style = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
   div.innerHTML = '<input type="text" class="custom-est-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem">'
-    + '<input type="number" class="custom-est-price" placeholder="金額（税込）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+    + '<input type="number" class="custom-est-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
     + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
     + '<button type="button" onclick="customEstQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
     + '<span class="custom-est-qty" style="font-weight:700;width:20px;text-align:center">1</span>'
@@ -874,7 +904,7 @@ function addResestCustomItem() {
   div.className = 'custom-est-row';
   div.style = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
   div.innerHTML = '<input type="text" class="resest-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem">'
-    + '<input type="number" class="resest-custom-price" placeholder="金額（税込）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+    + '<input type="number" class="resest-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
     + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
     + '<button type="button" onclick="resestCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
     + '<span class="resest-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>'
@@ -891,9 +921,36 @@ function getResestCustomItems() {
     const name = row.querySelector('.resest-custom-name').value.trim();
     const price = parseInt(row.querySelector('.resest-custom-price').value) || 0;
     const qty = parseInt(row.querySelector('.resest-custom-qty').textContent) || 1;
-    if (name && price > 0) items.push({ name: name, price: price, qty: qty, subtotal: price * qty });
+    if (name && price > 0) { const taxInc = Math.round(price * (1 + TAX_RATE)); items.push({ name: name, price: taxInc, qty: qty, subtotal: taxInc * qty }); }
   });
   return items;
+}
+
+// === クーポン（estimate） ===
+async function applyEstCoupon() {
+  const code = document.getElementById('est_coupon_code').value.trim();
+  const res = document.getElementById('est_coupon_result');
+  if (!code) { res.textContent = 'コードを入力してください'; res.style.color = 'var(--red)'; return; }
+  res.textContent = '確認中...'; res.style.color = '#999';
+  try {
+    const r = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ form_type: 'coupon_lookup', code: code }) });
+    const data = await r.json();
+    if (data.ok) {
+      couponDiscount = Number(data.discount) || 0;
+      const taxInc = Math.round(couponDiscount * (1 + TAX_RATE));
+      res.textContent = 'クーポン適用完了：-' + taxInc.toLocaleString() + '円（税込）';
+      res.style.color = 'green';
+    } else {
+      couponDiscount = 0;
+      res.textContent = data.error || '無効なコードです';
+      res.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    couponDiscount = 0;
+    res.textContent = '通信エラー';
+    res.style.color = 'var(--red)';
+  }
+  recalc();
 }
 
 // === 合計再計算 ===
@@ -901,7 +958,8 @@ function recalc() {
   // 追加条件（高所危険作業など）
   let invTotal = 0;
   document.querySelectorAll('#inv_options_area .inv-est-price').forEach(function(input) {
-    invTotal += parseInt(input.value) || 0;
+    const raw = parseInt(input.value) || 0;
+    if (raw > 0) invTotal += Math.round(raw * (1 + TAX_RATE));
   });
 
   // 修理メニュー（非表示または未生成の場合はスキップ）
@@ -910,7 +968,7 @@ function recalc() {
     const el = document.getElementById('today_qty_' + i);
     if (!el) return;
     const qty = parseInt(el.textContent) || 0;
-    todayRepair += item.price * qty;
+    todayRepair += Math.round(item.price * (1 + TAX_RATE)) * qty;
   });
 
   // 追加項目（自由入力）
@@ -918,7 +976,16 @@ function recalc() {
   getCustomEstItems().forEach(it => { customTotal += it.subtotal; });
 
   // 診断費 or 修理費 + 追加条件 + 修理メニュー + 自由入力 の合計
-  const todayTotal = P.initial_fee + todayRepair + invTotal + customTotal;
+  // 税抜ベースで計算（P.initial_feeはすでに税抜）
+  const todaySubEx = Math.max(0,
+    Math.round((P.initial_fee + todayRepair + invTotal + customTotal) / (1 + TAX_RATE))
+    - (couponDiscount || 0)
+  );
+  const todayTaxAmt = Math.round(todaySubEx * TAX_RATE);
+  const todayTotal = todaySubEx + todayTaxAmt;
+  document.getElementById('today_subtotal_ex').textContent = '¥' + todaySubEx.toLocaleString();
+  document.getElementById('today_tax_amount').textContent = '¥' + todayTaxAmt.toLocaleString();
+  document.getElementById('today_tax_rate_label').textContent = Math.round(TAX_RATE * 100);
   document.getElementById('today_total').textContent = '¥' + todayTotal.toLocaleString();
 
   let estTotal = 0;
@@ -926,19 +993,29 @@ function recalc() {
     const el = document.getElementById('est_qty_' + i);
     if (!el) return;
     const qty = parseInt(el.textContent) || 0;
-    estTotal += item.price * qty;
+    estTotal += item.price * qty; // price は税抜
   });
-  document.getElementById('est_total').textContent = '¥' + estTotal.toLocaleString();
+  const estTaxAmt = Math.round(estTotal * TAX_RATE);
+  const estTotalInc = estTotal + estTaxAmt;
+  document.getElementById('est_subtotal_ex').textContent = '¥' + estTotal.toLocaleString();
+  document.getElementById('est_tax_amount').textContent = '¥' + estTaxAmt.toLocaleString();
+  document.getElementById('est_tax_rate_label').textContent = Math.round(TAX_RATE * 100);
+  document.getElementById('est_total').textContent = '¥' + estTotalInc.toLocaleString();
 
   let resEstTotal = 0;
   REPAIR_MENU.forEach((item, i) => {
     const el = document.getElementById('resest_qty_' + i);
     if (!el) return;
     const qty = parseInt(el.textContent) || 0;
-    resEstTotal += item.price * qty;
+    resEstTotal += item.price * qty; // price は税抜
   });
   getResestCustomItems().forEach(it => { resEstTotal += it.subtotal; });
-  document.getElementById('res_est_total').textContent = '¥' + resEstTotal.toLocaleString();
+  const resEstTaxAmt = Math.round(resEstTotal * TAX_RATE);
+  const resEstTotalInc = resEstTotal + resEstTaxAmt;
+  document.getElementById('res_est_subtotal_ex').textContent = '¥' + resEstTotal.toLocaleString();
+  document.getElementById('res_est_tax_amount').textContent = '¥' + resEstTaxAmt.toLocaleString();
+  document.getElementById('res_est_tax_rate_label').textContent = Math.round(TAX_RATE * 100);
+  document.getElementById('res_est_total').textContent = '¥' + resEstTotalInc.toLocaleString();
 }
 
 // === 見積りトグル ===
@@ -1098,8 +1175,9 @@ async function submitReport() {
   let invTotal = 0;
   if (isKankou) {
     document.querySelectorAll('#inv_options_area .inv-est-row').forEach(function(row) {
-      const price = parseInt(row.querySelector('.inv-est-price').value) || 0;
-      if (price > 0) {
+      const rawPrice = parseInt(row.querySelector('.inv-est-price').value) || 0;
+      if (rawPrice > 0) {
+        const price = Math.round(rawPrice * (1 + TAX_RATE));
         const name = row.dataset.invName;
         todayItems.push({ name: name, price: price, qty: 1, subtotal: price });
         invTotal += price;
@@ -1152,7 +1230,8 @@ async function submitReport() {
     diag_fee: diagFee,
     today_repairs: todayItems,
     today_repair_total: todayRepairTotal,
-    today_total: isKankou ? (diagFee + todayRepairTotal) : 0,
+    coupon_discount: couponDiscount > 0 ? Math.round(couponDiscount*(1+TAX_RATE)) : 0,
+    today_total: isKankou ? (() => { const ct = couponDiscount > 0 ? Math.round(couponDiscount*(1+TAX_RATE)) : 0; return Math.max(0, diagFee + todayRepairTotal - ct); })() : 0,
     payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
     transfer_deadline: (() => {
       if (!isKankou || document.querySelector('input[name="payment"]:checked').value !== '銀行振り込み') return '';
