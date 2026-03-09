@@ -872,12 +872,13 @@ function customEstQtyChange(btn, delta) {
 
 // === 追加項目（自由入力）を取得 ===
 function getCustomEstItems() {
+  // 全て税抜で返す
   const items = [];
   document.querySelectorAll('#custom_est_items_area .custom-est-row').forEach(function(row) {
     const name = row.querySelector('.custom-est-name').value.trim();
     const price = parseInt(row.querySelector('.custom-est-price').value) || 0;
     const qty = parseInt(row.querySelector('.custom-est-qty').textContent) || 1;
-    if (name && price > 0) { const taxInc = Math.round(price * (1 + TAX_RATE)); items.push({ name: name, price: taxInc, qty: qty, subtotal: taxInc * qty }); }
+    if (name && price > 0) { items.push({ name: name, price: price, qty: qty, subtotal: price * qty }); }
   });
   return items;
 }
@@ -927,12 +928,13 @@ function addResestCustomItem() {
 
 // === 見積あり：追加項目を取得 ===
 function getResestCustomItems() {
+  // 全て税抜で返す
   const items = [];
   document.querySelectorAll('#resest_custom_items_area .custom-est-row').forEach(function(row) {
     const name = row.querySelector('.resest-custom-name').value.trim();
     const price = parseInt(row.querySelector('.resest-custom-price').value) || 0;
     const qty = parseInt(row.querySelector('.resest-custom-qty').textContent) || 1;
-    if (name && price > 0) { const taxInc = Math.round(price * (1 + TAX_RATE)); items.push({ name: name, price: taxInc, qty: qty, subtotal: taxInc * qty }); }
+    if (name && price > 0) { items.push({ name: name, price: price, qty: qty, subtotal: price * qty }); }
   });
   return items;
 }
@@ -966,24 +968,25 @@ async function applyEstCoupon() {
 
 // === 合計再計算 ===
 function recalc() {
-  // 追加条件（高所危険作業など）- 入力値は税抜のまま使う
+  // ★ 全て税抜で計算、最後に×1.1で税込を出す
+
+  // 追加条件（入力値は税抜）
   let invSubEx = 0;
   document.querySelectorAll('#inv_options_area .inv-est-price').forEach(function(input) {
     invSubEx += parseInt(input.value) || 0;
   });
 
-  // 修理メニュー - REPAIR_MENU.price は税抜
+  // 修理メニュー（REPAIR_MENU.price は税抜）
   let repairSubEx = 0;
   REPAIR_MENU.forEach((item, i) => {
     const el = document.getElementById('today_qty_' + i);
     if (!el) return;
-    const qty = parseInt(el.textContent) || 0;
-    repairSubEx += item.price * qty;
+    repairSubEx += item.price * (parseInt(el.textContent) || 0);
   });
 
-  // 追加項目（自由入力）- getCustomEstItems() は税込で返すので税抜に戻す
+  // 追加項目（getCustomEstItems は税抜で返す）
   let customSubEx = 0;
-  getCustomEstItems().forEach(it => { customSubEx += Math.round(it.subtotal / (1 + TAX_RATE)); });
+  getCustomEstItems().forEach(it => { customSubEx += it.subtotal; });
 
   // 全て税抜で合算（P.initial_fee も税抜）
   const todaySubEx = Math.max(0,
@@ -1103,12 +1106,12 @@ function onStatusChange() {
 
 // === 選択されたメニュー取得 ===
 function getSelectedItems(prefix) {
+  // 全て税抜で返す（REPAIR_MENU.price は税抜）
   const items = [];
   REPAIR_MENU.forEach((item, i) => {
     const qty = parseInt(document.getElementById(prefix + '_qty_' + i).textContent);
     if (qty > 0) {
-      const taxInc = Math.round(item.price * (1 + TAX_RATE));
-      items.push({ name: item.name, price: taxInc, qty: qty, subtotal: taxInc * qty });
+      items.push({ name: item.name, price: item.price, qty: qty, subtotal: item.price * qty });
     }
   });
   return items;
@@ -1182,24 +1185,20 @@ async function submitReport() {
   let todayRepairTotal = 0;
   todayItems.forEach(it => todayRepairTotal += it.subtotal);
 
-  // ★ 追加条件（高所危険作業など）の金額を取得してtodayItemsに追加
-  let invTotal = 0;
+  // ★ 追加条件・追加項目 → 全て税抜でtodayItemsに追加
   if (isKankou) {
     document.querySelectorAll('#inv_options_area .inv-est-row').forEach(function(row) {
-      const rawPrice = parseInt(row.querySelector('.inv-est-price').value) || 0;
-      if (rawPrice > 0) {
-        const price = Math.round(rawPrice * (1 + TAX_RATE));
-        const name = row.dataset.invName;
-        todayItems.push({ name: name, price: price, qty: 1, subtotal: price });
-        invTotal += price;
+      const priceEx = parseInt(row.querySelector('.inv-est-price').value) || 0;
+      if (priceEx > 0) {
+        todayItems.push({ name: row.dataset.invName, price: priceEx, qty: 1, subtotal: priceEx });
+        todayRepairTotal += priceEx;
       }
     });
-    // 追加項目（自由入力）も追加
+    // 追加項目（自由入力）も税抜で追加
     getCustomEstItems().forEach(function(item) {
       todayItems.push(item);
-      invTotal += item.subtotal;
+      todayRepairTotal += item.subtotal;
     });
-    todayRepairTotal += invTotal;
   }
 
   let hasEstimate = false;
@@ -1224,7 +1223,8 @@ async function submitReport() {
   }
 
   // ★ 修理案件の場合、diag_fee は 0 で送信
-  const diagFee = P.is_repair ? 0 : (isKankou ? P.initial_fee : 0);
+  // 全て税抜、today_totalは×1.1で税込
+  const diagFeeEx = P.is_repair ? 0 : (isKankou ? P.initial_fee : 0);
 
   const payload = {
     form_type: 'estimate',
@@ -1238,11 +1238,11 @@ async function submitReport() {
     staff_id: staffId,
     visit_date: document.getElementById('visit_date').value,
 
-    diag_fee: diagFee,
-    today_repairs: todayItems,
-    today_repair_total: todayRepairTotal,
-    coupon_discount: couponDiscount > 0 ? Math.round(couponDiscount*(1+TAX_RATE)) : 0,
-    today_total: isKankou ? (() => { const ct = couponDiscount > 0 ? Math.round(couponDiscount*(1+TAX_RATE)) : 0; return Math.max(0, diagFee + todayRepairTotal - ct); })() : 0,
+    diag_fee: diagFeeEx,  // 税抜
+    today_repairs: todayItems,  // 全て税抜
+    today_repair_total: todayRepairTotal,  // 税抜合計
+    coupon_discount: couponDiscount || 0,  // 税抜割引額
+    today_total: isKankou ? Math.round(Math.max(0, diagFeeEx + todayRepairTotal - (couponDiscount||0)) * (1 + TAX_RATE)) : 0,  // 税込合計
     payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
     transfer_deadline: (() => {
       if (!isKankou || document.querySelector('input[name="payment"]:checked').value !== '銀行振り込み') return '';
@@ -1253,8 +1253,8 @@ async function submitReport() {
     })(),
 
     has_estimate: hasEstimate,
-    estimate_repairs: estItems,
-    estimate_total: estTotal,
+    estimate_repairs: estItems,  // 全て税抜
+    estimate_total: estTotal,    // 税抜合計（GAS側で×1.1して税込に）
     estimate_expiry: estExpiry,
     estimate_note: estNote,
 
