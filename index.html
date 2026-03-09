@@ -946,7 +946,12 @@ function nextStep() {
     }
     if (oType === '原因究明作業') {
       const inv = getInvOptions();
-      if (inv.length) extra = '<br><span style="font-size:.85rem;color:#666">└ ' + inv.map(v => v.name + (v.price ? '(¥'+v.price.toLocaleString()+')' : '')).join('、') + '</span>';
+      const customs = getCustomItems();
+      const allExtras = [
+        ...inv.map(v => v.name + (v.price ? '(¥'+v.price.toLocaleString()+')' : '')),
+        ...customs.map(c => c.name + '(¥'+c.subtotal.toLocaleString()+')')
+      ];
+      if (allExtras.length) extra = '<br><span style="font-size:.85rem;color:#666">└ ' + allExtras.join('、') + '</span>';
     }
     let disc = couponDiscount > 0 ? '<br><span style="color:#e65100;font-weight:bold">※クーポン適用：-' + Math.round(couponDiscount*(1+TAX_RATE)).toLocaleString() + '円（税込）</span>' : '';
 
