@@ -713,6 +713,7 @@ function syncManualInputs() {
       });
       const r = await resp.json();
       if (r && !r.error) {
+        if (r.case_id) P.case_id = r.case_id;
         P.name = r.name || P.name;
         P.email = r.email || P.email;
         P.tel = r.tel || P.tel;
