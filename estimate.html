@@ -95,6 +95,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .status-label.hold:has(input:checked){border-color:#7b1fa2;background:#f3e5f5;color:#7b1fa2}
 .status-notice.hold-notice{background:#f3e5f5;border:2px solid #7b1fa2;color:#7b1fa2}
 .btn-hold{background:#7b1fa2;color:#fff}
+.btn-diag-est{background:#0288d1;color:#fff}
 </style>
 </head>
 <body>
@@ -211,6 +212,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <input type="radio" name="contract_status" value="不通・保留">
           <span class="icon">⏸️</span>不通・保留
         </label>
+        <label class="status-label reserve" onclick="onStatusChange()" id="opt_diag_est">
+          <input type="radio" name="contract_status" value="診断見積のみ">
+          <span class="icon">📋</span>診断<br><small>見積のみ</small>
+        </label>
       </div>
     </div>
 
@@ -226,6 +231,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div id="notice_reserve_no" class="status-notice reserve-notice hidden">
       予約として記録します（後追いアラート対象になります）
+    </div>
+    <div id="notice_diag_est" class="status-notice reserve-notice hidden">
+      診断費の見積書をメールで送付します（金銭の授受なし・後追いアラート対象）
     </div>
     <div id="notice_hold" class="status-notice hold-notice hidden">
       不通・保留として記録します
@@ -448,6 +456,21 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
     </div>
 
     <!-- ===== 予約（見積あり）セクション ===== -->
+    <!-- ===== 診断見積のみセクション ===== -->
+    <div id="section_diag_est" class="hidden">
+      <div class="section-title">📋 診断費見積</div>
+      <div class="card">
+        <div style="font-size:.92rem;color:var(--text-sub);margin-bottom:8px">作業対象の機器に応じた診断費で見積書を発行します</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-weight:600" id="diag_est_item_name">故障診断</span>
+          <span style="font-weight:700;color:var(--blue)" id="diag_est_fee_display">¥9,000（税抜）</span>
+        </div>
+        <div style="text-align:right;margin-top:10px;font-size:1rem;font-weight:700">
+          合計（税込）：<span id="diag_est_total_display">¥9,900</span>
+        </div>
+      </div>
+    </div>
+
     <div id="section_reserve_est" class="hidden">
       <div class="section-title">📄 見積書の作成</div>
       <div class="card">
@@ -581,7 +604,7 @@ const P = {
   email:            params.get('email') || '',
   tel:              params.get('tel') || '',
   address:          params.get('address') || '',
-  initial_fee:      parseInt(params.get('initial_fee')) || 9000,
+  initial_fee:      parseInt(params.get('initial_fee')) || 9000, // 機器確定後にgetDiagFee()で上書き
   equipment:        params.get('equipment') || '',
   staff_id:         params.get('staff_id') || '',
   payment_method:   params.get('payment_method') || '',
@@ -648,6 +671,13 @@ function applyRepairMode() {
 }
 
 // UI初期化関数
+// === 診断費（税抜）を機器名から取得 ===
+function getDiagFee(equipment) {
+  if (!equipment) return 9000;
+  if (equipment.includes('業務用')) return 15000;
+  return 9000;
+}
+
 // === 対象機器選択肢をprefixで絞り込む ===
 function updateEquipOptions(prefix, currentVal) {
   const sel = document.getElementById('manual_equipment');
@@ -674,7 +704,14 @@ function updateEquipOptions(prefix, currentVal) {
 }
 
 function onEstEquipChange() {
-  // 機器変更時に必要なら追加処理（今は空）
+  const equip = document.getElementById('manual_equipment').value;
+  P.equipment = equip;
+  // 故障診断モードなら診断費を機器に合わせて更新
+  const workType = document.querySelector('input[name="manual_work_type"]:checked');
+  if (!workType || workType.value !== '修理') {
+    P.initial_fee = getDiagFee(equip);
+  }
+  recalc();
 }
 
 function initUI() {
@@ -759,7 +796,7 @@ function applyPrefixUI(prefix) {
     if (toggleFixed) toggleFixed.style.display = 'none';
     // HC以外に切り替えたときはonStatusChangeに委ねつつ、診断費を復元してリセット
     P.is_repair = false;
-    P.initial_fee = 9000;
+    P.initial_fee = getDiagFee(document.getElementById('manual_equipment').value || P.equipment);
     // work_type_toggleの表示はonStatusChangeが判断するので再実行
     onStatusChange();
     // onStatusChangeはsetTimeout内なので、こちらで明示的に再計算
@@ -1127,7 +1164,7 @@ function onWorkTypeChange() {
     document.getElementById('today_repairs_section').style.display = '';
   } else {
     P.is_repair = false;
-    P.initial_fee = 9000;
+    P.initial_fee = getDiagFee(document.getElementById('manual_equipment').value || P.equipment);
     document.getElementById('today_repairs_section').style.display = 'none';
   }
   recalc();
@@ -1143,12 +1180,24 @@ function onStatusChange() {
     const isReserveEst = (status === '予約（見積あり）');
     const isReserveNo = (status === '予約（見積なし）');
     const isHold = (status === '不通・保留');
+    const isDiagEst = (status === '診断見積のみ');
     const isReserve = isReserveEst || isReserveNo;
 
     document.getElementById('section_kankou').classList.toggle('hidden', !isKankou);
     document.getElementById('section_reserve_est').classList.toggle('hidden', !isReserveEst);
+    document.getElementById('section_diag_est').classList.toggle('hidden', !isDiagEst);
     document.getElementById('section_reason').classList.toggle('hidden', !(isLoss || isCancel));
     document.getElementById('section_reserve_datetime').classList.toggle('hidden', !isReserve);
+
+    // 診断見積セクションの費用を更新
+    if (isDiagEst) {
+      const equip = document.getElementById('manual_equipment').value || P.equipment || '';
+      const fee = getDiagFee(equip);
+      const feeInc = fee + Math.round(fee * 0.1);
+      document.getElementById('diag_est_item_name').textContent = '故障診断' + (equip ? '（' + equip + '）' : '');
+      document.getElementById('diag_est_fee_display').textContent = '¥' + fee.toLocaleString('ja-JP') + '（税抜）';
+      document.getElementById('diag_est_total_display').textContent = '¥' + feeInc.toLocaleString('ja-JP');
+    }
 
     // ★ パラメータなし（手入力モード）かつ完工のときだけ作業種別トグルを表示（HC-は除く）
     const hasData = !!(P.case_id || P.name);
@@ -1163,6 +1212,7 @@ function onStatusChange() {
     document.getElementById('notice_reserve_est').classList.toggle('hidden', !isReserveEst);
     document.getElementById('notice_reserve_no').classList.toggle('hidden', !isReserveNo);
     document.getElementById('notice_hold').classList.toggle('hidden', !isHold);
+    document.getElementById('notice_diag_est').classList.toggle('hidden', !isDiagEst);
 
     const btn = document.getElementById('btn_submit');
     btn.className = 'btn-submit';
@@ -1172,6 +1222,7 @@ function onStatusChange() {
     else if (isReserveEst) { btn.classList.add('btn-reserve'); btn.textContent = '予約＋見積書を送信'; }
     else if (isReserveNo) { btn.classList.add('btn-reserve'); btn.textContent = '予約として報告'; }
     else if (isHold) { btn.classList.add('btn-hold'); btn.textContent = '不通・保留として報告'; }
+    else if (isDiagEst) { btn.classList.add('btn-diag-est'); btn.textContent = '診断見積書を送信'; }
   }, 10);
 }
 
@@ -1242,6 +1293,7 @@ async function submitReport() {
   const isKankou = (status === '完工');
   const isReserveEst = (status === '予約（見積あり）');
   const isReserveNo = (status === '予約（見積なし）');
+  const isDiagEst = (status === '診断見積のみ');
   const isReserve = isReserveEst || isReserveNo;
 
   if (isReserve && !document.getElementById('reserve_date').value) {
@@ -1352,6 +1404,10 @@ async function submitReport() {
     estimate_expiry: estExpiry,
     estimate_note: estNote,
 
+    // 診断見積のみ
+    has_diag_estimate: isDiagEst,
+    diag_estimate_fee: isDiagEst ? getDiagFee(P.equipment) : 0,  // 税抜
+
     staff_memo: document.getElementById('staff_memo').value,
     cancel_reason: document.getElementById('loss_reason') ? document.getElementById('loss_reason').value : '',
 
@@ -1377,13 +1433,14 @@ async function submitReport() {
   else if (status === 'キャンセル') doneMsg.innerHTML = '🚫 キャンセルとして記録しました';
   else if (isReserveEst) doneMsg.innerHTML = '📄 予約として記録し、見積書を送信しました';
   else if (status === '不通・保留') doneMsg.innerHTML = '⏸️ 不通・保留として記録しました';
+  else if (isDiagEst) doneMsg.innerHTML = '📋 診断見積書を送信しました';
   else doneMsg.innerHTML = '📅 予約として記録しました（後追いアラート対象）';
 
   if (gasResult.uriage_error) {
     doneMsg.innerHTML += '<br><span style="color:red;font-size:.85rem">⚠ 売上管理シート: ' + gasResult.uriage_error + '</span>';
   }
 
-  const showDocSection = hasEstimate || isKankou;
+  const showDocSection = hasEstimate || isKankou || isDiagEst;
   document.getElementById('doc_section').style.display = showDocSection ? 'block' : 'none';
 
   window._submittedPayload = payload;
