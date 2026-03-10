@@ -1390,11 +1390,15 @@ async function generateDoc(type) {
 
   let docTotal = 0;
   if (sp.has_estimate) {
+    // estimate_totalは税込
     docTotal = sp.estimate_total || 0;
+  } else if (sp.today_total) {
+    // today_totalは税込で計算済み
+    docTotal = sp.today_total;
   } else if (docItems.length > 0) {
-    docTotal = docItems.reduce((sum, r) => sum + (r.subtotal || 0), 0);
-  } else {
-    docTotal = sp.today_total || 0;
+    // docItemsのpriceは税抜なので税込に変換
+    const subEx = docItems.reduce((sum, r) => sum + (r.subtotal || 0), 0);
+    docTotal = subEx + Math.round(subEx * 0.1);
   }
 
   const payload = {
