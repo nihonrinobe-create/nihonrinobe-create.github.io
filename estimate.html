@@ -190,7 +190,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <input type="text" id="staff_id" placeholder="例：0001" inputmode="numeric">
       </div>
       <div class="field">
-        <label>対応日</label>
+        <label>訪問日</label>
         <input type="date" id="visit_date">
       </div>
     </div>
@@ -795,6 +795,8 @@ function syncManualInputs() {
         }
         P.staff_id = r.staff_id || P.staff_id;
         P.payment_method = r.payment_method || '';
+        P.transfer_deadline = r.transfer_deadline || '';
+        P.transfer_name = r.transfer_name || '';
 
         // ★ order_items から診断費以外を取り出す（HC-/EC-も含め常にセット）
         const pfx = (r.case_id || P.case_id || '').split('-')[0].toUpperCase();
@@ -834,6 +836,14 @@ function syncManualInputs() {
     } catch(e) { console.log('lookup error', e); }
   }
   initUI();
+
+  // mode=invoice : 業務報告フォームを隠して請求書発行ボタンだけ表示
+  if (params.get('mode') === 'invoice') {
+    document.getElementById('main_view').classList.add('hidden');
+    document.getElementById('done_view').classList.remove('hidden');
+    document.getElementById('done_msg').innerHTML = '📑 請求書・領収書の発行';
+    document.getElementById('doc_section').style.display = 'block';
+  }
 })();
 
 // 訪問日デフォルト：今日
@@ -1387,14 +1397,15 @@ async function generateDoc(type) {
     form_type: 'generate_doc',
     doc_type: type,
     case_id: P.case_id,
+    contract_id: P.contract_id || '',
     name: P.name,
     email: P.email,
     tel: P.tel,
     items: docItems,
     total: docTotal,
     payment_method: sp.payment_method || P.payment_method || '',
-    transfer_deadline: sp.transfer_deadline || '',
-    transfer_name: sp.transfer_name || '',
+    transfer_deadline: sp.transfer_deadline || P.transfer_deadline || '',
+    transfer_name: sp.transfer_name || P.transfer_name || '',
   };
 
   try {
