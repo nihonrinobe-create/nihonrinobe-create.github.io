@@ -167,19 +167,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <input type="text" id="manual_address" placeholder="例：東京都板橋区本町1-2-3">
         <div class="field-hint">※番地・建物名まで一括入力OK</div>
       </div>
-      <div class="field">
-        <label>対象機器 <span class="field-required">※必須</span></label>
-        <select id="manual_equipment" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
-          <option value="">-- 選択してください --</option>
-          <option value="ルームエアコン">ルームエアコン</option>
-          <option value="業務用エアコン">業務用エアコン</option>
-          <option value="エコキュート">エコキュート</option>
-          <option value="ガス給湯器">ガス給湯器</option>
-          <option value="換気扇・レンジフード">換気扇・レンジフード</option>
-          <option value="ハウスクリーニング">ハウスクリーニング</option>
-          <option value="その他">その他</option>
-        </select>
-      </div>
+
     </div>
 
     <!-- 担当者番号 -->
@@ -289,6 +277,17 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ===== 作業対象（作業セクションの上） ===== -->
+    <div class="section-title">🔧 作業対象</div>
+    <div class="card" style="margin-bottom:12px">
+      <select id="manual_equipment" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem" onchange="onEstEquipChange()">
+        <option value="">-- 選択してください --</option>
+        <option value="ルームエアコン">ルームエアコン</option>
+        <option value="業務用エアコン">業務用エアコン</option>
+        <option value="その他">その他</option>
+      </select>
     </div>
 
     <!-- ===== 完工セクション ===== -->
@@ -649,6 +648,35 @@ function applyRepairMode() {
 }
 
 // UI初期化関数
+// === 対象機器選択肢をprefixで絞り込む ===
+function updateEquipOptions(prefix, currentVal) {
+  const sel = document.getElementById('manual_equipment');
+  if (!sel) return;
+  let opts = [];
+  if (prefix === 'EC') {
+    opts = ['エコキュート', 'ガス給湯器', 'その他'];
+  } else if (prefix === 'HC') {
+    opts = ['ハウスクリーニング', 'その他'];
+  } else {
+    // YA / CP / HM（デフォルト）
+    opts = ['ルームエアコン', '業務用エアコン', 'その他'];
+  }
+  const prev = currentVal || sel.value;
+  sel.innerHTML = '<option value="">-- 選択してください --</option>';
+  opts.forEach(o => {
+    const el = document.createElement('option');
+    el.value = o; el.textContent = o;
+    if (o === prev) el.selected = true;
+    sel.appendChild(el);
+  });
+  // prefixに合う値が選択肢にない場合はリセット
+  if (prev && !opts.includes(prev)) sel.value = '';
+}
+
+function onEstEquipChange() {
+  // 機器変更時に必要なら追加処理（今は空）
+}
+
 function initUI() {
   document.getElementById('h_case_id').textContent = P.case_id || '未設定';
   document.getElementById('h_name').textContent = P.name || '未設定';
@@ -678,12 +706,13 @@ function initUI() {
   if (P.email)   document.getElementById('manual_email').value = P.email;
   if (P.address) document.getElementById('manual_address').value = P.address;
 
+  // 対象機器の選択肢をprefixで絞り込む＆セクション表示制御
+  const casePrefix = (P.case_id || '').split('-')[0].toUpperCase();
+  updateEquipOptions(casePrefix, P.equipment);
+  applyPrefixUI(casePrefix);
+
   // ★ 修理案件モードを適用
   applyRepairMode();
-
-  // ★ プレフィックスに応じてセクション表示制御
-  const casePrefix = (P.case_id || '').split('-')[0].toUpperCase();
-  applyPrefixUI(casePrefix);
 
   // ★ applyRepairMode が早期returnした場合も含め、必ず合計を再計算
   recalc();
@@ -699,6 +728,7 @@ function onPrefixChange() {
   alphaEl.style.display = (prefix === 'YA') ? '' : 'none';
   if (prefix !== 'YA') alphaEl.value = '';
   updateCaseIdPreview();
+  updateEquipOptions(prefix);
   applyPrefixUI(prefix);
 }
 
@@ -707,8 +737,10 @@ function applyPrefixUI(prefix) {
   const isEC = (prefix === 'EC');
   const isHC = (prefix === 'HC');
 
-  // EC-/HC-: 🔧 今日やった追加作業 を非表示
-  document.getElementById('today_repairs_section').style.display = (isEC || isHC) ? 'none' : '';
+  // EC-/HC-/故障診断: 🔧 今日やった追加作業 を非表示
+  const _workType = document.querySelector('input[name="manual_work_type"]:checked');
+  const _isDiag = !_workType || _workType.value !== '修理';
+  document.getElementById('today_repairs_section').style.display = (isEC || isHC || _isDiag) ? 'none' : '';
   // EC-/HC-: 予約見積あり内の修理メニューも非表示
   document.getElementById('reserve_est_repairs').style.display = (isEC || isHC) ? 'none' : '';
   // HC-: 📋 追加条件 も非表示
@@ -1092,9 +1124,11 @@ function onWorkTypeChange() {
   if (val === '修理') {
     P.is_repair = true;
     P.initial_fee = 0;
+    document.getElementById('today_repairs_section').style.display = '';
   } else {
     P.is_repair = false;
     P.initial_fee = 9000;
+    document.getElementById('today_repairs_section').style.display = 'none';
   }
   recalc();
 }
