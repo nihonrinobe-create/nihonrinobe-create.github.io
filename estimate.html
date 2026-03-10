@@ -190,7 +190,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <input type="text" id="staff_id" placeholder="例：0001" inputmode="numeric">
       </div>
       <div class="field">
-        <label>訪問日</label>
+        <label>対応日</label>
         <input type="date" id="visit_date">
       </div>
     </div>
@@ -575,6 +575,7 @@ const REPAIR_MENU = [
 // === URLパラメータから情報取得 ===
 const params = new URLSearchParams(location.search);
 const P = {
+  contract_id: params.get('contract_id') || '',
   case_id:     params.get('case_id') || params.get('c') || '',
   name:        params.get('name') || '',
   email:       params.get('email') || '',
@@ -765,15 +766,14 @@ function syncManualInputs() {
   document.getElementById('h_name').textContent = P.name || '未設定';
 }
 
-// 短縮URL: ?c=CASE_ID または ?c=AC-... のみの場合、GASからデータ取得
+// URLにcontract_idがある場合はそちらを優先してlookup
 (async function() {
-  if (P.case_id && !params.get('name') && !params.get('initial_fee')) {
+  if ((P.contract_id || P.case_id) && !params.get('name') && !params.get('initial_fee')) {
     try {
-      document.getElementById('h_case_id').textContent = P.case_id + '（読込中...）';
-      // AC-で始まる場合はcontract_id、それ以外はcase_idでlookup
-      const isContractId = P.case_id.startsWith('AC-');
-      const lookupBody = isContractId
-        ? { form_type: 'lookup', contract_id: P.case_id }
+      document.getElementById('h_case_id').textContent = (P.case_id || P.contract_id) + '（読込中...）';
+      // contract_idパラメータがあれば完全一致lookup、なければcase_idでlookup
+      const lookupBody = P.contract_id
+        ? { form_type: 'lookup', contract_id: P.contract_id, case_id: P.case_id }
         : { form_type: 'lookup', case_id: P.case_id };
       const resp = await fetch(GAS_API_URL, {
         method: 'POST', body: JSON.stringify(lookupBody)
