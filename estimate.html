@@ -655,7 +655,7 @@ function applyRepairMode() {
     document.querySelectorAll('#inv_options_area .inv-est-row').forEach(function(row) {
       if (row.dataset.invName === item.name && item.price) {
         const input = row.querySelector('.inv-est-price');
-        if (input) { input.value = Math.round(item.price / (1 + TAX_RATE)); foundInv = true; }
+        if (input) { input.value = item.price; foundInv = true; }  // 既に税抜
       }
     });
     if (foundInv) return;
@@ -678,7 +678,7 @@ function applyRepairMode() {
       const priceInput = targetRow.querySelector('.custom-est-price');
       const qtySpan = targetRow.querySelector('.custom-est-qty');
       if (nameInput) nameInput.value = item.name;
-      if (priceInput) priceInput.value = Math.round(item.price / (1 + TAX_RATE));
+      if (priceInput) priceInput.value = item.price;  // 既に税抜
       if (qtySpan) qtySpan.textContent = parseInt(item.qty) || 1;
     }
   });
@@ -807,6 +807,19 @@ function applyPrefixUI(prefix) {
   document.getElementById('reserve_est_repairs').style.display = (isEC || isHC) ? 'none' : '';
   // HC-: 📋 追加条件 も非表示
   document.getElementById('add_conditions_section').style.display = isHC ? 'none' : '';
+  // HC-: 診断見積のみ を非表示（HCに診断は不要）
+  const _diagEstOpt = document.getElementById('opt_diag_est');
+  if (_diagEstOpt) {
+    _diagEstOpt.style.display = isHC ? 'none' : '';
+    // HCで「診断見積のみ」が選択中だった場合は「完工」に戻す
+    if (isHC) {
+      const _cur = document.querySelector('input[name="contract_status"]:checked');
+      if (_cur && _cur.value === '診断見積のみ') {
+        document.querySelector('input[name="contract_status"][value="完工"]').checked = true;
+        onStatusChange();
+      }
+    }
+  }
 
   // HC-手入力モード: 作業種別を「清掃作業」固定にする
   const toggle = document.getElementById('work_type_toggle');
@@ -903,9 +916,9 @@ function syncManualInputs() {
         // initial_feeはorder_itemsの故障診断行から取得（tax-inc→tax-ex変換）
         const diagItem = (r.order_items || []).find(function(it) { return it.name && it.name.startsWith('故障診断'); });
         if (diagItem) {
-          P.initial_fee = Math.round((diagItem.price || 0) / (1 + TAX_RATE));
+          P.initial_fee = diagItem.price || 0;  // 既に税抜
         } else {
-          P.initial_fee = parseInt(r.initial_fee) ? Math.round(parseInt(r.initial_fee) / (1 + TAX_RATE)) : P.initial_fee;
+          P.initial_fee = parseInt(r.initial_fee) || P.initial_fee;  // 既に税抜
         }
         P.staff_id = r.staff_id || P.staff_id;
         P.payment_method = r.payment_method || '';
@@ -917,8 +930,22 @@ function syncManualInputs() {
         const hasDiagFee = (r.order_items || []).some(function(it) {
           return it.name && it.name.startsWith('故障診断');
         });
+        // クーポン行をcouponDiscountに自動反映
+        const couponItem = (r.order_items || []).find(function(it) {
+          return it.name && it.name.startsWith('クーポン');
+        });
+        if (couponItem && couponItem.price < 0) {
+          couponDiscount = Math.abs(couponItem.price);  // 税抜割引額
+          const couponRes = document.getElementById('est_coupon_result');
+          if (couponRes) {
+            const taxInc = Math.round(couponDiscount * (1 + TAX_RATE));
+            couponRes.textContent = 'クーポン適用済：-' + couponDiscount.toLocaleString() + '円（税抜）/ -' + taxInc.toLocaleString() + '円（税込）';
+            couponRes.style.color = 'var(--green, #388e3c)';
+          }
+        }
+
         const repairItems = (r.order_items || []).filter(function(it) {
-          return it.name && !it.name.startsWith('故障診断');
+          return it.name && !it.name.startsWith('故障診断') && !it.name.startsWith('クーポン');
         });
         if (repairItems.length > 0) {
           P.order_items = repairItems;
