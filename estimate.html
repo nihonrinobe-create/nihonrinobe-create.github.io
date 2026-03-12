@@ -595,7 +595,8 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGp
 
 // === 修理メニュー定義 ===
 const TAX_RATE = 0.10; // 消費税率（変更時はここだけ修正）
-let couponDiscount = 0; // 税抜割引額（0=未適用）
+let coupons = []; // [{code, discount}] 税抜割引額の配列
+let couponDiscount = 0; // 税抜合計（後方互換用）
 
 const REPAIR_MENU = [
   { name: '冷媒ガス注入（500gまで）', price: 27000 },
@@ -930,16 +931,23 @@ function syncManualInputs() {
         const hasDiagFee = (r.order_items || []).some(function(it) {
           return it.name && it.name.startsWith('故障診断');
         });
-        // クーポン行をcouponDiscountに自動反映
-        const couponItem = (r.order_items || []).find(function(it) {
-          return it.name && it.name.startsWith('クーポン');
+        // クーポン行をcoupons配列に自動反映（複数対応）
+        coupons = [];
+        (r.order_items || []).forEach(function(it) {
+          if (it.name && it.name.startsWith('クーポン割引') && it.price < 0) {
+            // 名前から「クーポン割引（CODE）」のコードを抽出
+            const m = it.name.match(/（(.+)）/);
+            const code = m ? m[1] : 'クーポン';
+            coupons.push({ code: code, discount: Math.abs(it.price) });
+          }
         });
-        if (couponItem && couponItem.price < 0) {
-          couponDiscount = Math.abs(couponItem.price);  // 税抜割引額
+        couponDiscount = coupons.reduce(function(s, c) { return s + c.discount; }, 0);
+        if (coupons.length > 0) {
           const couponRes = document.getElementById('est_coupon_result');
           if (couponRes) {
             const taxInc = Math.round(couponDiscount * (1 + TAX_RATE));
-            couponRes.textContent = 'クーポン適用済：-' + couponDiscount.toLocaleString() + '円（税抜）/ -' + taxInc.toLocaleString() + '円（税込）';
+            const codeList = coupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
+            couponRes.textContent = 'クーポン適用済：' + codeList + '　合計-¥' + couponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
             couponRes.style.color = 'var(--green, #388e3c)';
           }
         }
@@ -1118,9 +1126,14 @@ async function applyEstCoupon() {
     const r = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ form_type: 'coupon_lookup', code: code }) });
     const data = await r.json();
     if (data.ok) {
-      couponDiscount = Number(data.discount) || 0;
+      const newDiscount = Number(data.discount) || 0;
+      const newCode = document.getElementById('est_coupon_code').value.trim();
+      const existIdx = coupons.findIndex(function(c) { return c.code === newCode; });
+      if (existIdx >= 0) { coupons[existIdx].discount = newDiscount; } else { coupons.push({ code: newCode, discount: newDiscount }); }
+      couponDiscount = coupons.reduce(function(s, c) { return s + c.discount; }, 0);
       const taxInc = Math.round(couponDiscount * (1 + TAX_RATE));
-      res.textContent = 'クーポン適用完了：-' + taxInc.toLocaleString() + '円（税込）';
+      const codeList = coupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
+      res.textContent = 'クーポン適用：' + codeList + '　合計-¥' + couponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
       res.style.color = 'green';
     } else {
       couponDiscount = 0;
@@ -1207,6 +1220,10 @@ function recalc() {
       const n = row.querySelector('.custom-est-name').value.trim();
       const p = parseInt(row.querySelector('.custom-est-price').value) || 0;
       if (n && p > 0) _tbHtml += '<div style="' + _rowStyle + '"><span>' + n + '</span><span>¥' + p.toLocaleString('ja-JP') + '（税抜）</span></div>';
+    });
+    // クーポン行（複数対応）
+    coupons.forEach(function(cp) {
+      _tbHtml += '<div style="' + _rowStyle + ';color:#e65100"><span>クーポン（' + cp.code + '）</span><span>-¥' + cp.discount.toLocaleString('ja-JP') + '（税抜）</span></div>';
     });
     _todayBreakEl.innerHTML = _tbHtml;
     } // end if todaySubEx > 0
@@ -1549,6 +1566,10 @@ async function submitReport() {
       todayItems.push(item);
       todayRepairTotal += item.subtotal;
     });
+    // クーポン行を税抜で追加
+    coupons.forEach(function(cp) {
+      todayItems.push({ name: 'クーポン割引（' + cp.code + '）', price: -cp.discount, qty: 1, subtotal: -cp.discount });
+    });
   }
 
   let hasEstimate = false;
@@ -1601,6 +1622,7 @@ async function submitReport() {
     today_repairs: todayItems,  // 全て税抜
     today_repair_total: todayRepairTotal,  // 税抜合計
     coupon_discount: couponDiscount || 0,  // 税抜割引額
+    coupon_codes: coupons.map(function(c){ return c.code; }).join(','),
     today_total: isKankou ? Math.round(Math.max(0, diagFeeEx + todayRepairTotal - (couponDiscount||0)) * (1 + TAX_RATE)) : 0,  // 税込合計
     payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
     transfer_deadline: (() => {
