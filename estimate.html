@@ -758,6 +758,14 @@ let resCouponDiscount = 0; // 後日見積用クーポン税抜合計
 let estCoupons = []; // [{code, discount}] 完工チェックボックス後日見積用クーポン配列
 let estCouponDiscount = 0;
 let currentIsHC = false; // applyPrefixUI()で更新、onStatusChange()で参照
+
+// ★ 内訳表示ヘルパー：単価 × 数量 ＝ 小計 形式
+function fmtBreakdownPrice(unitPrice, qty) {
+  if (qty > 1) {
+    return '\u00a5' + unitPrice.toLocaleString('ja-JP') + ' \u00d7 ' + qty + ' \uff1d \u00a5' + (unitPrice * qty).toLocaleString('ja-JP') + '\uff08\u7a0e\u629c\uff09';
+  }
+  return '\u00a5' + unitPrice.toLocaleString('ja-JP') + '\uff08\u7a0e\u629c\uff09';
+}
 let diagCoupons = []; // [{code, discount}] 診断見積用クーポン配列
 let diagCouponDiscount = 0;
 
@@ -1607,7 +1615,6 @@ async function applyDiagCoupon() {
   recalc();
 }
 
-
 // === 合計再計算 ===
 function recalc() {
   // ★ 全て税抜で計算、最後に×1.1で税込を出す
@@ -1666,7 +1673,7 @@ function recalc() {
       const el = document.getElementById('today_qty_' + i);
       if (!el) return;
       const qty = parseInt(el.textContent) || 0;
-      if (qty > 0) _tbHtml += '<div style="' + _rowStyle + '"><span>' + item.name + (qty > 1 ? ' ×' + qty : '') + '</span><span>¥' + (item.price * qty).toLocaleString('ja-JP') + '（税抜）</span></div>';
+      if (qty > 0) _tbHtml += '<div style="' + _rowStyle + '"><span>' + item.name + '</span><span>' + fmtBreakdownPrice(item.price, qty) + '</span></div>';
     });
     // 追加条件（HC時スキップ）
     if (_addCondVisible) {
@@ -1679,7 +1686,8 @@ function recalc() {
     document.querySelectorAll('#custom_est_items_area .custom-est-row').forEach(function(row) {
       const n = row.querySelector('.custom-est-name').value.trim();
       const p = parseInt(row.querySelector('.custom-est-price').value) || 0;
-      if (n && p > 0) _tbHtml += '<div style="' + _rowStyle + '"><span>' + n + '</span><span>¥' + p.toLocaleString('ja-JP') + '（税抜）</span></div>';
+      var q = parseInt(row.querySelector('.custom-est-qty').textContent) || 1;
+      if (n && p > 0) _tbHtml += '<div style="' + _rowStyle + '"><span>' + n + '</span><span>' + fmtBreakdownPrice(p, q) + '</span></div>';
     });
     // クーポン行（複数対応）
     coupons.forEach(function(cp) {
@@ -1787,14 +1795,14 @@ function recalc() {
       const el = document.getElementById('est_qty_' + i);
       if (!el) return;
       const qty = parseInt(el.textContent) || 0;
-      if (qty > 0) _bHtml += '<div style="' + _rowStyle + '"><span>' + item.name + (qty > 1 ? ' ×' + qty : '') + '</span><span>¥' + (item.price * qty).toLocaleString('ja-JP') + '（税抜）</span></div>';
+      if (qty > 0) _bHtml += '<div style="' + _rowStyle + '"><span>' + item.name + '</span><span>' + fmtBreakdownPrice(item.price, qty) + '</span></div>';
     });
     document.querySelectorAll('#est_inv_options_area .est-inv-row').forEach(function(row) {
       const p = parseInt(row.querySelector('.est-inv-price').value) || 0;
       if (p > 0) _bHtml += '<div style="' + _rowStyle + '"><span>' + row.dataset.invName + '</span><span>¥' + p.toLocaleString('ja-JP') + '（税抜）</span></div>';
     });
     getEstCustomItems().forEach(function(it) {
-      _bHtml += '<div style="' + _rowStyle + '"><span>' + it.name + (it.qty > 1 ? ' ×' + it.qty : '') + '</span><span>¥' + it.subtotal.toLocaleString('ja-JP') + '（税抜）</span></div>';
+      _bHtml += '<div style="' + _rowStyle + '"><span>' + it.name + '</span><span>' + fmtBreakdownPrice(it.price, it.qty) + '</span></div>';
     });
     estCoupons.forEach(function(cp) {
       _bHtml += '<div style="' + _rowStyle + ';color:#e65100"><span>クーポン（' + cp.code + '）</span><span>-¥' + cp.discount.toLocaleString('ja-JP') + '（税抜）</span></div>';
@@ -1843,12 +1851,12 @@ function recalc() {
       if (!el) return;
       const qty = parseInt(el.textContent) || 0;
       if (qty > 0) {
-        _html += '<div style="' + _rowStyle + '"><span>' + item.name + (qty > 1 ? ' ×' + qty : '') + '</span><span>¥' + (item.price * qty).toLocaleString('ja-JP') + '（税抜）</span></div>';
+        _html += '<div style="' + _rowStyle + '"><span>' + item.name + '</span><span>' + fmtBreakdownPrice(item.price, qty) + '</span></div>';
       }
     });
     // 追加項目（予約見積専用エリア）
     getResCustomItems().forEach(function(it) {
-      _html += '<div style="' + _rowStyle + '"><span>' + it.name + (it.qty > 1 ? ' ×' + it.qty : '') + '</span><span>¥' + it.subtotal.toLocaleString('ja-JP') + '（税抜）</span></div>';
+      _html += '<div style="' + _rowStyle + '"><span>' + it.name + '</span><span>' + fmtBreakdownPrice(it.price, it.qty) + '</span></div>';
     });
     // 追加条件（予約見積専用エリア・HC時スキップ）
     if (_resAddCondVisible) {
@@ -1864,7 +1872,7 @@ function recalc() {
     _resBreakEl.innerHTML = _html;
   }
 }
-
+  
 // === 見積りトグル ===
 function toggleEstimate() {
   document.getElementById('estimate_area').style.display =
