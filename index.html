@@ -160,7 +160,8 @@ body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--
 
         <div class="field">
           <label>担当者番号 <span style="color:red;font-size:.8rem">※必須</span></label>
-          <input type="text" id="c_emp_id" inputmode="numeric" placeholder="例: 0001">
+          <input type="text" id="c_emp_id" inputmode="numeric" placeholder="例: 0001" onblur="lookupStaffName()">
+          <div id="staff_name_display" style="margin-top:5px;font-size:.85rem;font-weight:600;color:#2e7d32"></div>
         </div>
       </div>
     </div>
@@ -1213,6 +1214,31 @@ async function doSubmit() {
   const repUrl = 'https://nihonrinobe-create.github.io/index.html?c=' + encodeURIComponent(d.case_id) + '&repeat=1';
   document.getElementById('report_link').href = estUrl;
   document.getElementById('report_link_area').style.display = 'block';
+}
+  // === 担当者名lookup ===
+async function lookupStaffName() {
+  var sid = document.getElementById('c_emp_id').value.trim();
+  var display = document.getElementById('staff_name_display');
+  if (!sid) { display.textContent = ''; return; }
+  while (sid.length > 0 && sid.length < 4) sid = '0' + sid;
+  display.textContent = '検索中...';
+  display.style.color = '#999';
+  try {
+    var resp = await fetch(GAS_API_URL, {
+      method: 'POST', body: JSON.stringify({ form_type: 'staff_lookup', staff_id: sid })
+    });
+    var r = await resp.json();
+    if (r.ok) {
+      display.textContent = '担当：' + r.staff_name;
+      display.style.color = '#2e7d32';
+    } else {
+      display.textContent = '※該当なし';
+      display.style.color = '#c62828';
+    }
+  } catch(e) {
+    display.textContent = '※通信エラー';
+    display.style.color = '#c62828';
+  }
 }
 </script>
 </body>
