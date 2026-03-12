@@ -478,7 +478,8 @@ function generateContractId() {
 
 let currentStep = 1;
 const TAX_RATE = 0.10; // 消費税率（変更時はここだけ修正）
-let couponDiscount = 0; // 税抜割引額（0=未適用）
+let coupons = []; // [{code, discount}] 税抜割引額の配列
+let couponDiscount = 0; // 税抜合計（後方互換用）
 const CONSENT_PHRASE = '契約書面等をPDFメールで受領することに同意します';
 
 // ================================
@@ -807,9 +808,15 @@ async function applyCoupon() {
     const r = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ form_type: 'coupon_lookup', code: code }) });
     const data = await r.json();
     if (data.ok) {
-      couponDiscount = Number(data.discount) || 0;
+      const newDiscount = Number(data.discount) || 0;
+      const newCode = document.getElementById('c_coupon_code').value.trim();
+      // 同じコードが既にあれば上書き、なければ追加
+      const existIdx = coupons.findIndex(function(c) { return c.code === newCode; });
+      if (existIdx >= 0) { coupons[existIdx].discount = newDiscount; } else { coupons.push({ code: newCode, discount: newDiscount }); }
+      couponDiscount = coupons.reduce(function(s, c) { return s + c.discount; }, 0);
       const taxInc = Math.round(couponDiscount * (1 + TAX_RATE));
-      res.textContent = 'クーポン適用完了：-' + couponDiscount.toLocaleString() + '円（税抜）/ -' + taxInc.toLocaleString() + '円（税込）';
+      const codeList = coupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
+      res.textContent = 'クーポン適用：' + codeList + '　合計-¥' + couponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
       res.style.color = 'var(--green)';
     } else {
       couponDiscount = 0;
@@ -1021,7 +1028,7 @@ function nextStep() {
       ];
       if (allExtras.length) extra = '<br><span style="font-size:.85rem;color:#666">└ ' + allExtras.join('、') + '</span>';
     }
-    let disc = couponDiscount > 0 ? '<br><span style="color:#e65100;font-weight:bold">※クーポン適用：-' + couponDiscount.toLocaleString() + '円（税抜）</span>' : '';
+    let disc = coupons.length > 0 ? '<br><span style="color:#e65100;font-weight:bold">※クーポン：' + coupons.map(function(c){return c.code+'(-¥'+c.discount.toLocaleString()+')';}).join('・') + '</span>' : '';
 
     document.getElementById('confirmContent').innerHTML =
       '<div class="confirm-row"><span class="confirm-label">案件番号</span><span class="confirm-val">' + d.case_id + '</span></div>' +
@@ -1095,13 +1102,15 @@ function nextStep() {
     });
 
     // クーポン行（税抜で表示）
-    if (couponDiscount > 0) {
-      subtotalEx -= couponDiscount;
+    if (coupons.length > 0) {
+      coupons.forEach(function(cp) {
+        subtotalEx -= cp.discount;
+        estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#e65100">クーポン割引（' + cp.code + '）</td>'
+          + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd;color:#e65100">-' + cp.discount.toLocaleString() + '円</td>'
+          + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">1</td>'
+          + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd;color:#e65100">-' + cp.discount.toLocaleString() + '円</td></tr>';
+      });
       if (subtotalEx < 0) subtotalEx = 0;
-      estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#e65100">クーポン割引</td>'
-        + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd;color:#e65100">-' + couponDiscount.toLocaleString() + '円</td>'
-        + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">1</td>'
-        + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd;color:#e65100">-' + couponDiscount.toLocaleString() + '円</td></tr>';
     }
 
     const taxAmount = Math.round(subtotalEx * TAX_RATE);
@@ -1141,7 +1150,7 @@ async function doSubmit() {
     const names = getSelectedRepairNames();
     if (names) orderInfo += '：' + names;
   }
-  if (couponDiscount > 0) orderInfo += ' 【クーポン利用】';
+  if (coupons.length > 0) orderInfo += ' 【クーポン：' + coupons.map(function(c){return c.code;}).join('・') + '】';
   if (document.getElementById('req_sameday').checked) orderInfo += ' 【当日工事希望】';
 
   const customItems = getCustomItems();
@@ -1167,7 +1176,9 @@ async function doSubmit() {
     });
   }
   customItems.forEach(c => orderItems.push({ name: c.name, price: c.price, qty: c.qty || 1, subtotal: c.subtotal }));
-  if (couponDiscount > 0) { orderItems.push({ name: 'クーポン割引', price: -couponDiscount, qty: 1, subtotal: -couponDiscount }); }  // 税抜
+  coupons.forEach(function(cp) {
+    orderItems.push({ name: 'クーポン割引（' + cp.code + '）', price: -cp.discount, qty: 1, subtotal: -cp.discount });
+  });
 
   const contractId = generateContractId();
 
@@ -1183,6 +1194,7 @@ async function doSubmit() {
     cancel_rule: document.getElementById('cancel_rule').value,
     custom_items: customItems.length ? customItems.map(c => c.name + ':' + c.price).join('、') : '',
     order_items: orderItems,
+    coupon_codes: coupons.map(function(c){ return c.code; }).join(','),
     agree_contract: true,
     agree_electronic: true,
     consent_text: document.getElementById('consent_text').value.trim(),
