@@ -367,11 +367,12 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       </div><!-- /today_repairs_section -->
 
       <!-- 追加項目（自由入力） -->
+      <div id="kankou_custom_section">
       <div class="section-title">✏️ 追加項目（自由入力）</div>
       <div class="card">
         <div id="custom_est_items_area">
           <div class="custom-est-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
-            <input type="text" class="custom-est-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem">
+            <input type="text" class="custom-est-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
             <input type="number" class="custom-est-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
             <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
               <button type="button" onclick="customEstQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>
@@ -382,16 +383,18 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         </div>
         <button type="button" onclick="addCustomEstItem()" style="background:#eee;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:.85rem;cursor:pointer;margin-top:4px">＋ 項目を追加</button>
       </div>
+      </div><!-- /kankou_custom_section -->
 
-      <div class="card" style="margin-top:8px">
+      <div id="kankou_coupon_section" class="card" style="margin-top:8px">
         <label style="font-weight:600;font-size:.9rem">クーポンコード / 紹介コード</label>
         <div style="display:flex;gap:8px;margin-top:6px">
           <input type="text" id="est_coupon_code" placeholder="コードを入力" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
           <button type="button" onclick="applyEstCoupon()" style="padding:10px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer">適用</button>
         </div>
         <div id="est_coupon_result" style="font-size:.85rem;margin-top:5px;font-weight:bold"></div>
-      </div>
+      </div><!-- /kankou_coupon_section -->
 
+      <div id="kankou_total_section">
             <div class="total-box">
         <!-- 完工内訳 -->
         <div id="today_breakdown_area" style="margin-bottom:8px"></div>
@@ -404,8 +407,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <div class="total-label">今日のお支払い合計（税込）</div>
         <div class="total-amount" id="today_total">¥9,900</div>
       </div>
+      </div><!-- /kankou_total_section -->
 
-      <div class="card">
+      <div id="payment_section" class="card">
         <div class="field">
           <label>お支払い方法</label>
           <div class="pay-grid">
@@ -432,27 +436,86 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <span>後日分の見積書も作成する</span>
         </label>
         <div id="estimate_area">
-          <div class="field" style="margin-top:10px">
-            <label>見積り有効期限</label>
-            <input type="date" id="est_expiry">
-          </div>
-          <div class="field">
-            <label>見積り備考</label>
-            <textarea id="est_note" rows="2" placeholder="例：室外機の基板交換が必要。部品取寄せ1週間。"></textarea>
-          </div>
-          <div id="estimate_repairs">
-            <!-- JSで生成 -->
-          </div>
-          <div class="estimate-total-box">
-            <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;margin-bottom:4px">
-              <span>合計（税抜）</span><span id="est_subtotal_ex">¥0</span>
+          <!-- オレンジ枠：後日見積全体 -->
+          <div style="border:2px solid var(--orange);border-radius:12px;padding:14px;margin-top:10px;background:#fffaf5">
+            <div class="field">
+              <label>見積り有効期限</label>
+              <input type="date" id="est_expiry">
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
-              <span>消費税（<span id="est_tax_rate_label">10</span>%）</span><span id="est_tax_amount">¥0</span>
+            <div class="field">
+              <label>見積り備考</label>
+              <textarea id="est_note" rows="2" placeholder="例：室外機の基板交換が必要。部品取寄せ1週間。"></textarea>
             </div>
-            <div class="estimate-total-label">見積り合計（税込）</div>
-            <div class="estimate-total-amount" id="est_total">¥0</div>
-          </div>
+
+            <!-- 追加条件 -->
+            <div id="est_add_conditions_section">
+              <div class="section-title" style="margin-top:10px">📋 追加条件</div>
+              <div class="card">
+                <div style="font-size:.82rem;color:var(--text-sub);margin-bottom:10px">該当する項目に金額を入力してください</div>
+                <div id="est_inv_options_area">
+                  <div class="est-inv-row" data-inv-name="高所危険作業" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                    <span style="font-size:.9rem;font-weight:600;flex:1">高所危険作業</span>
+                    <input type="number" class="est-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+                  </div>
+                  <div class="est-inv-row" data-inv-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                    <span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span>
+                    <input type="number" class="est-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+                  </div>
+                  <div class="est-inv-row" data-inv-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                    <span style="font-size:.9rem;font-weight:600;flex:1">室外機特殊設置</span>
+                    <input type="number" class="est-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+                  </div>
+                  <div class="est-inv-row" data-inv-name="電気系統調査" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                    <span style="font-size:.9rem;font-weight:600;flex:1">電気系統調査</span>
+                    <input type="number" class="est-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 追加作業（修理メニュー） -->
+            <div id="estimate_repairs"><!-- JSで生成 --></div>
+
+            <!-- 追加項目（自由入力） -->
+            <div class="section-title" style="margin-top:10px">✏️ 追加項目（自由入力）</div>
+            <div class="card">
+              <div id="est_custom_items_area">
+                <div class="est-custom-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
+                  <input type="text" class="est-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
+                  <input type="number" class="est-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
+                  <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+                    <button type="button" onclick="estCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>
+                    <span class="est-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>
+                    <button type="button" onclick="estCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" onclick="addEstCustomItem()" style="background:#eee;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:.85rem;cursor:pointer;margin-top:4px">＋ 項目を追加</button>
+            </div>
+
+            <!-- クーポン（後日見積分） -->
+            <div class="section-title" style="margin-top:10px">🏷 クーポン / 紹介コード</div>
+            <div class="card">
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="text" id="est_chk_coupon_code" placeholder="コードを入力" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
+                <button type="button" onclick="applyEstCoupon2()" style="padding:10px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer">適用</button>
+              </div>
+              <div id="est_chk_coupon_result" style="font-size:.85rem;margin-top:5px;font-weight:bold"></div>
+            </div>
+
+            <!-- 合計ボックス -->
+            <div class="estimate-total-box" style="margin-top:12px">
+              <div id="est_breakdown_area" style="margin-bottom:8px"></div>
+              <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;margin-bottom:4px">
+                <span>合計（税抜）</span><span id="est_subtotal_ex">¥0</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
+                <span>消費税（<span id="est_tax_rate_label">10</span>%）</span><span id="est_tax_amount">¥0</span>
+              </div>
+              <div class="estimate-total-label">見積り合計（税込）</div>
+              <div class="estimate-total-amount" id="est_total">¥0</div>
+            </div>
+          </div><!-- /オレンジ枠 -->
         </div>
       </div>
     </div>
@@ -483,11 +546,70 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           </div>
         </div>
       </div>
+
+      <!-- 診断見積：追加条件・追加項目・クーポン（オレンジ枠） -->
+      <div style="border:2px solid var(--orange);border-radius:12px;padding:14px;background:#fffaf5;margin-top:12px">
+
+        <!-- 追加条件（HC以外） -->
+        <div id="diag_add_conditions_section">
+          <div class="section-title" style="margin-top:0">📋 追加条件</div>
+          <div class="card">
+            <div style="font-size:.82rem;color:var(--text-sub);margin-bottom:10px">該当する項目に金額を入力してください</div>
+            <div id="diag_inv_options_area">
+              <div class="diag-inv-row" data-inv-name="高所危険作業" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                <span style="font-size:.9rem;font-weight:600;flex:1">高所危険作業</span>
+                <input type="number" class="diag-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+              </div>
+              <div class="diag-inv-row" data-inv-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                <span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span>
+                <input type="number" class="diag-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+              </div>
+              <div class="diag-inv-row" data-inv-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                <span style="font-size:.9rem;font-weight:600;flex:1">室外機特殊設置</span>
+                <input type="number" class="diag-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+              </div>
+              <div class="diag-inv-row" data-inv-name="電気系統調査" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                <span style="font-size:.9rem;font-weight:600;flex:1">電気系統調査</span>
+                <input type="number" class="diag-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 追加項目（自由入力） -->
+        <div class="section-title" style="margin-top:10px">✏️ 追加項目（自由入力）</div>
+        <div class="card">
+          <div id="diag_custom_items_area">
+            <div class="diag-custom-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
+              <input type="text" class="diag-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
+              <input type="number" class="diag-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
+              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+                <button type="button" onclick="diagCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>
+                <span class="diag-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>
+                <button type="button" onclick="diagCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>
+              </div>
+            </div>
+          </div>
+          <button type="button" onclick="addDiagCustomItem()" style="background:#eee;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:.85rem;cursor:pointer;margin-top:4px">＋ 項目を追加</button>
+        </div>
+
+        <!-- クーポン -->
+        <div class="section-title" style="margin-top:10px">🏷 クーポン / 紹介コード</div>
+        <div class="card">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="diag_coupon_code" placeholder="コードを入力" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
+            <button type="button" onclick="applyDiagCoupon()" style="padding:10px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer">適用</button>
+          </div>
+          <div id="diag_coupon_result" style="font-size:.85rem;margin-top:5px;font-weight:bold"></div>
+        </div>
+
+      </div>
     </div>
 
     <div id="section_reserve_est" class="hidden">
       <div class="section-title">📄 見積書の作成</div>
-      <div class="card">
+      <!-- オレンジ枠：予約見積全体 -->
+      <div style="border:2px solid var(--orange);border-radius:12px;padding:14px;background:#fffaf5">
         <div class="field">
           <label>見積り有効期限</label>
           <input type="date" id="res_est_expiry">
@@ -496,40 +618,74 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <label>見積り備考</label>
           <textarea id="res_est_note" rows="2" placeholder="例：室外機の基板交換が必要。部品取寄せ1週間。"></textarea>
         </div>
-      </div>
-      <div id="reserve_est_repairs">
-        <!-- JSで生成 -->
-      </div>
 
-      <!-- 見積あり：追加項目（自由入力） -->
-      <div class="section-title">✏️ 追加項目（自由入力）</div>
-      <div class="card">
-        <div id="resest_custom_items_area">
-          <div class="custom-est-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
-            <input type="text" class="resest-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem">
-            <input type="number" class="resest-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
-            <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-              <button type="button" onclick="resestCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>
-              <span class="resest-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>
-              <button type="button" onclick="resestCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>
+        <!-- 追加条件 -->
+        <div id="res_add_conditions_section">
+          <div class="section-title" style="margin-top:10px">📋 追加条件</div>
+          <div class="card">
+            <div style="font-size:.82rem;color:var(--text-sub);margin-bottom:10px">該当する項目に金額を入力してください</div>
+            <div id="res_inv_options_area">
+              <div class="res-inv-row" data-inv-name="高所危険作業" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                <span style="font-size:.9rem;font-weight:600;flex:1">高所危険作業</span>
+                <input type="number" class="res-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+              </div>
+              <div class="res-inv-row" data-inv-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                <span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span>
+                <input type="number" class="res-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+              </div>
+              <div class="res-inv-row" data-inv-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                <span style="font-size:.9rem;font-weight:600;flex:1">室外機特殊設置</span>
+                <input type="number" class="res-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+              </div>
+              <div class="res-inv-row" data-inv-name="電気系統調査" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+                <span style="font-size:.9rem;font-weight:600;flex:1">電気系統調査</span>
+                <input type="number" class="res-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
+              </div>
             </div>
           </div>
         </div>
-        <button type="button" onclick="addResestCustomItem()" style="background:#eee;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:.85rem;cursor:pointer;margin-top:4px">＋ 項目を追加</button>
-      </div>
 
-      <div class="estimate-total-box">
-        <!-- 見積内訳 -->
-        <div id="res_est_breakdown_area" style="margin-bottom:8px"></div>
-        <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;margin-bottom:4px">
-          <span>合計（税抜）</span><span id="res_est_subtotal_ex">¥0</span>
+        <div id="reserve_est_repairs"><!-- JSで生成 --></div>
+
+        <!-- 追加項目（自由入力） -->
+        <div class="section-title" style="margin-top:10px">✏️ 追加項目（自由入力）</div>
+        <div class="card">
+          <div id="res_custom_items_area">
+            <div class="res-custom-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
+              <input type="text" class="res-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
+              <input type="number" class="res-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">
+              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+                <button type="button" onclick="resCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>
+                <span class="res-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>
+                <button type="button" onclick="resCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>
+              </div>
+            </div>
+          </div>
+          <button type="button" onclick="addResCustomItem()" style="background:#eee;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:.85rem;cursor:pointer;margin-top:4px">＋ 項目を追加</button>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
-          <span>消費税（<span id="res_est_tax_rate_label">10</span>%）</span><span id="res_est_tax_amount">¥0</span>
+
+        <!-- クーポン -->
+        <div class="section-title" style="margin-top:10px">🏷 クーポン / 紹介コード</div>
+        <div class="card">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="res_est_coupon_code" placeholder="コードを入力" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
+            <button type="button" onclick="applyResCoupon()" style="padding:10px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer">適用</button>
+          </div>
+          <div id="res_est_coupon_result" style="font-size:.85rem;margin-top:5px;font-weight:bold"></div>
         </div>
-        <div class="estimate-total-label">見積り合計（税込）</div>
-        <div class="estimate-total-amount" id="res_est_total">¥0</div>
-      </div>
+
+        <div class="estimate-total-box" style="margin-top:12px">
+          <div id="res_est_breakdown_area" style="margin-bottom:8px"></div>
+          <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;margin-bottom:4px">
+            <span>合計（税抜）</span><span id="res_est_subtotal_ex">¥0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
+            <span>消費税（<span id="res_est_tax_rate_label">10</span>%）</span><span id="res_est_tax_amount">¥0</span>
+          </div>
+          <div class="estimate-total-label">見積り合計（税込）</div>
+          <div class="estimate-total-amount" id="res_est_total">¥0</div>
+        </div>
+      </div><!-- /オレンジ枠 -->
     </div>
 
     <!-- 失注・キャンセル理由 -->
@@ -595,8 +751,15 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGp
 
 // === 修理メニュー定義 ===
 const TAX_RATE = 0.10; // 消費税率（変更時はここだけ修正）
-let coupons = []; // [{code, discount}] 税抜割引額の配列
-let couponDiscount = 0; // 税抜合計（後方互換用）
+let coupons = []; // [{code, discount}] 完工用クーポン配列
+let couponDiscount = 0; // 完工用クーポン税抜合計
+let resCoupons = []; // [{code, discount}] 後日見積用クーポン配列
+let resCouponDiscount = 0; // 後日見積用クーポン税抜合計
+let estCoupons = []; // [{code, discount}] 完工チェックボックス後日見積用クーポン配列
+let estCouponDiscount = 0;
+let currentIsHC = false; // applyPrefixUI()で更新、onStatusChange()で参照
+let diagCoupons = []; // [{code, discount}] 診断見積用クーポン配列
+let diagCouponDiscount = 0;
 
 const REPAIR_MENU = [
   { name: '冷媒ガス注入（500gまで）', price: 27000 },
@@ -777,11 +940,59 @@ function initUI() {
   // ★ 修理案件モードを適用
   applyRepairMode();
 
+  // ★ パラメータあり修理案件: P.is_repair=true なら today_repairs_section を表示
+  // （applyPrefixUI時点では manual_work_type が「診断」デフォルトのため非表示になるため上書き）
+  if (P.is_repair) {
+    document.getElementById('today_repairs_section').style.display = '';
+  }
+
   // ★ applyRepairMode が早期returnした場合も含め、必ず合計を再計算
   recalc();
 
   // ★ 初期状態でもステータス表示を反映（完工がデフォルト選択されているため）
   onStatusChange();
+}
+
+
+// === リセットヘルパー ===
+function resetRepairMenuQty(prefix) {
+  // today_repairs の数量をリセット
+  REPAIR_MENU.forEach(function(_, i) {
+    const sp = document.getElementById('today_qty_' + i);
+    if (sp) { sp.textContent = '0'; }
+    const row = document.getElementById('today_row_' + i);
+    if (row) row.classList.remove('active');
+  });
+  // est（後日見積チェックボックス内）の修理メニューもリセット
+  REPAIR_MENU.forEach(function(_, i) {
+    const sp = document.getElementById('est_qty_' + i);
+    if (sp) { sp.textContent = '0'; }
+    const row = document.getElementById('est_row_' + i);
+    if (row) row.classList.remove('active');
+  });
+  // resest（予約見積あり）の修理メニューもリセット
+  REPAIR_MENU.forEach(function(_, i) {
+    const sp = document.getElementById('resest_qty_' + i);
+    if (sp) { sp.textContent = '0'; }
+    const row = document.getElementById('resest_row_' + i);
+    if (row) row.classList.remove('active');
+  });
+}
+
+function resetAddConditions(areaId) {
+  document.querySelectorAll('#' + areaId + ' input[type="number"]').forEach(function(inp) {
+    inp.value = '';
+  });
+}
+
+function resetPaymentMethod() {
+  const first = document.querySelector('input[name="payment"]');
+  if (first) {
+    document.querySelectorAll('input[name="payment"]').forEach(function(r) { r.checked = false; });
+    first.checked = true;
+  }
+  const deadlineEl = document.getElementById('est_transfer_deadline');
+  if (deadlineEl) deadlineEl.closest('.field') && (deadlineEl.closest('.field').style.display = 'none');
 }
 
 // === 案件番号：プレフィックス切替 ===
@@ -791,6 +1002,31 @@ function onPrefixChange() {
   alphaEl.style.display = (prefix === 'YA') ? '' : 'none';
   if (prefix !== 'YA') alphaEl.value = '';
   updateCaseIdPreview();
+
+  // --- リセット処理 ---
+  // どのprefixへの変更でも機器選択・P.equipment・P.initial_feeをリセット
+  document.getElementById('manual_equipment').value = '';
+  P.equipment = '';
+  P.initial_fee = getDiagFee(''); // 空=9000（デフォルト）
+
+  const isToEC = (prefix === 'EC');
+  const isToHC = (prefix === 'HC');
+
+  if (isToEC || isToHC) {
+    // EC/HC へ変更：修理メニュー数量をリセット
+    resetRepairMenuQty(prefix);
+    if (isToHC) {
+      // HC へ変更：追加条件の金額もリセット（HC時は追加条件自体が非表示になる）
+      resetAddConditions('inv_options_area');
+      // HCはクーポンも消す
+      coupons = []; couponDiscount = 0;
+      const couponRes = document.getElementById('est_coupon_result');
+      if (couponRes) couponRes.textContent = '';
+      // HCはinitial_fee = 0（診断費なし）
+      P.initial_fee = 0;
+    }
+  }
+
   updateEquipOptions(prefix);
   applyPrefixUI(prefix);
 }
@@ -799,6 +1035,7 @@ function onPrefixChange() {
 function applyPrefixUI(prefix) {
   const isEC = (prefix === 'EC');
   const isHC = (prefix === 'HC');
+  currentIsHC = isHC; // グローバル更新
 
   // EC-/HC-/故障診断: 🔧 今日やった追加作業 を非表示
   const _workType = document.querySelector('input[name="manual_work_type"]:checked');
@@ -806,8 +1043,22 @@ function applyPrefixUI(prefix) {
   document.getElementById('today_repairs_section').style.display = (isEC || isHC || _isDiag) ? 'none' : '';
   // EC-/HC-: 予約見積あり内の修理メニューも非表示
   document.getElementById('reserve_est_repairs').style.display = (isEC || isHC) ? 'none' : '';
+  // EC-/HC-: 後日見積内の修理メニューも非表示
+  const _estRepairs = document.getElementById('estimate_repairs');
+  if (_estRepairs) _estRepairs.style.display = (isEC || isHC) ? 'none' : '';
+  // HC-: 後日見積内の追加条件も非表示（est_add_conditions_sectionはHCのみ非表示、EC表示）
+  const _estAddCond2 = document.getElementById('est_add_conditions_section');
+  if (_estAddCond2) _estAddCond2.style.display = isHC ? 'none' : '';
   // HC-: 📋 追加条件 も非表示
   document.getElementById('add_conditions_section').style.display = isHC ? 'none' : '';
+  const _estAddCond = document.getElementById('est_add_conditions_section');
+  if (_estAddCond) _estAddCond.style.display = isHC ? 'none' : '';
+  const _resAddCond = document.getElementById('res_add_conditions_section');
+  if (_resAddCond) _resAddCond.style.display = isHC ? 'none' : '';
+  // HC-: 診断見積のみのオレンジ枠内追加条件を非表示
+  const _diagAddCond = document.getElementById('diag_add_conditions_section');
+  if (_diagAddCond) _diagAddCond.style.display = isHC ? 'none' : '';
+
   // HC-: 診断見積のみ を非表示（HCに診断は不要）
   const _diagEstOpt = document.getElementById('opt_diag_est');
   if (_diagEstOpt) {
@@ -830,13 +1081,37 @@ function applyPrefixUI(prefix) {
     if (toggleFixed) toggleFixed.style.display = 'block';
     P.initial_fee = 0;
     P.is_repair = false;
-    // 追加条件をリセット
+    // 追加条件をリセット（完工・後日見積・予約見積・診断見積 全エリア）
     document.querySelectorAll('#inv_options_area .inv-est-price').forEach(function(input) { input.value = ''; });
-    // 追加項目（自由入力）をリセット
+    document.querySelectorAll('#est_inv_options_area .est-inv-price').forEach(function(input) { input.value = ''; });
+    document.querySelectorAll('#res_inv_options_area .res-inv-price').forEach(function(input) { input.value = ''; });
+    document.querySelectorAll('#diag_inv_options_area .diag-inv-price').forEach(function(input) { input.value = ''; });
+    // 後日見積チェックボックスをOFF・estimate_areaを非表示にする
+    const _chkEst = document.getElementById('chk_estimate');
+    const _estArea = document.getElementById('estimate_area');
+    if (_chkEst) _chkEst.checked = false;
+    if (_estArea) _estArea.style.display = 'none';
+    // 後日見積エリア内の修理メニュー数量をリセット（再チェックON時に残骸が出ないよう）
+    resetRepairMenuQty('');
+    // 後日見積の自由入力もリセット
+    const _estCustomArea = document.getElementById('est_custom_items_area');
+    if (_estCustomArea) {
+      _estCustomArea.innerHTML = '<div class="est-custom-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">'
+        + '<input type="text" class="est-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+        + '<input type="number" class="est-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+        + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+        + '<button type="button" onclick="estCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
+        + '<span class="est-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>'
+        + '<button type="button" onclick="estCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>'
+        + '</div>'
+        + '<button type="button" onclick="this.closest(\'.est-custom-row\').remove();recalc()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">\u00d7</button>'
+        + '</div>';
+    }
+    // 完工の追加項目（自由入力）をリセット
     const _customArea = document.getElementById('custom_est_items_area');
     if (_customArea) {
       _customArea.innerHTML = '<div class="custom-est-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">'
-        + '<input type="text" class="custom-est-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem">'
+        + '<input type="text" class="custom-est-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
         + '<input type="number" class="custom-est-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
         + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
         + '<button type="button" onclick="customEstQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
@@ -1066,7 +1341,7 @@ function addCustomEstItem() {
   const div = document.createElement('div');
   div.className = 'custom-est-row';
   div.style = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
-  div.innerHTML = '<input type="text" class="custom-est-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem">'
+  div.innerHTML = '<input type="text" class="custom-est-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
     + '<input type="number" class="custom-est-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
     + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
     + '<button type="button" onclick="customEstQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
@@ -1092,7 +1367,7 @@ function addResestCustomItem() {
   const div = document.createElement('div');
   div.className = 'custom-est-row';
   div.style = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
-  div.innerHTML = '<input type="text" class="resest-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem">'
+  div.innerHTML = '<input type="text" class="resest-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
     + '<input type="number" class="resest-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
     + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
     + '<button type="button" onclick="resestCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
@@ -1147,6 +1422,191 @@ async function applyEstCoupon() {
   }
   recalc();
 }
+
+// === 完工後日見積クーポン（チェックボックス用）===
+async function applyEstCoupon2() {
+  const code = document.getElementById('est_chk_coupon_code').value.trim();
+  const res = document.getElementById('est_chk_coupon_result');
+  if (!code) { res.textContent = 'コードを入力してください'; res.style.color = 'var(--red)'; return; }
+  res.textContent = '確認中...'; res.style.color = '#999';
+  try {
+    const r = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ form_type: 'coupon_lookup', code: code }) });
+    const data = await r.json();
+    if (data.ok) {
+      const newDiscount = Number(data.discount) || 0;
+      const existIdx = estCoupons.findIndex(function(c) { return c.code === code; });
+      if (existIdx >= 0) { estCoupons[existIdx].discount = newDiscount; } else { estCoupons.push({ code: code, discount: newDiscount }); }
+      estCouponDiscount = estCoupons.reduce(function(s, c) { return s + c.discount; }, 0);
+      const taxInc = Math.round(estCouponDiscount * (1 + TAX_RATE));
+      const codeList = estCoupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
+      res.textContent = 'クーポン適用：' + codeList + '　合計-¥' + estCouponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
+      res.style.color = 'green';
+    } else {
+      res.textContent = data.error || '無効なコードです';
+      res.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    res.textContent = '通信エラー';
+    res.style.color = 'var(--red)';
+  }
+  recalc();
+}
+
+function getEstCustomItems() {
+  const items = [];
+  document.querySelectorAll('#est_custom_items_area .est-custom-row').forEach(function(row) {
+    const n = row.querySelector('.est-custom-name').value.trim();
+    const p = parseInt(row.querySelector('.est-custom-price').value) || 0;
+    const q = parseInt((row.querySelector('.est-custom-qty') || {}).textContent) || 1;
+    if (n && p > 0) items.push({ name: n, price: p, qty: q, subtotal: p * q });
+  });
+  return items;
+}
+function addEstCustomItem() {
+  const area = document.getElementById('est_custom_items_area');
+  const div = document.createElement('div');
+  div.className = 'est-custom-row';
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
+  div.innerHTML = '<input type="text" class="est-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">' +
+    '<input type="number" class="est-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">' +
+    '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' +
+    '<button type="button" onclick="estCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>' +
+    '<span class="est-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>' +
+    '<button type="button" onclick="estCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>' +
+    '</div>';
+  area.appendChild(div);
+}
+function estCustomQtyChange(btn, delta) {
+  const span = btn.parentElement.querySelector('.est-custom-qty');
+  const v = Math.max(1, (parseInt(span.textContent) || 1) + delta);
+  span.textContent = v;
+  recalc();
+}
+
+// === 予約見積：追加項目関数 ===
+function getResCustomItems() {
+  const items = [];
+  document.querySelectorAll('#res_custom_items_area .res-custom-row').forEach(function(row) {
+    const n = row.querySelector('.res-custom-name').value.trim();
+    const p = parseInt(row.querySelector('.res-custom-price').value) || 0;
+    const q = parseInt((row.querySelector('.res-custom-qty') || {}).textContent) || 1;
+    if (n && p > 0) items.push({ name: n, price: p, qty: q, subtotal: p * q });
+  });
+  return items;
+}
+function addResCustomItem() {
+  const area = document.getElementById('res_custom_items_area');
+  const div = document.createElement('div');
+  div.className = 'res-custom-row';
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
+  div.innerHTML = '<input type="text" class="res-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">' +
+    '<input type="number" class="res-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">' +
+    '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">' +
+    '<button type="button" onclick="resCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>' +
+    '<span class="res-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>' +
+    '<button type="button" onclick="resCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>' +
+    '</div>';
+  area.appendChild(div);
+}
+function resCustomQtyChange(btn, delta) {
+  const span = btn.parentElement.querySelector('.res-custom-qty');
+  const v = Math.max(1, (parseInt(span.textContent) || 1) + delta);
+  span.textContent = v;
+  recalc();
+}
+
+// === 後日見積クーポン ===
+async function applyResCoupon() {
+  const code = document.getElementById('res_est_coupon_code').value.trim();
+  const res = document.getElementById('res_est_coupon_result');
+  if (!code) { res.textContent = 'コードを入力してください'; res.style.color = 'var(--red)'; return; }
+  res.textContent = '確認中...'; res.style.color = '#999';
+  try {
+    const r = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ form_type: 'coupon_lookup', code: code }) });
+    const data = await r.json();
+    if (data.ok) {
+      const newDiscount = Number(data.discount) || 0;
+      const existIdx = resCoupons.findIndex(function(c) { return c.code === code; });
+      if (existIdx >= 0) { resCoupons[existIdx].discount = newDiscount; } else { resCoupons.push({ code: code, discount: newDiscount }); }
+      resCouponDiscount = resCoupons.reduce(function(s, c) { return s + c.discount; }, 0);
+      const taxInc = Math.round(resCouponDiscount * (1 + TAX_RATE));
+      const codeList = resCoupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
+      res.textContent = 'クーポン適用：' + codeList + '　合計-¥' + resCouponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
+      res.style.color = 'green';
+    } else {
+      res.textContent = data.error || '無効なコードです';
+      res.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    res.textContent = '通信エラー';
+    res.style.color = 'var(--red)';
+  }
+  recalc();
+}
+
+// === 診断見積 追加項目（自由入力）===
+function getDiagCustomItems() {
+  const items = [];
+  document.querySelectorAll('#diag_custom_items_area .diag-custom-row').forEach(function(row) {
+    const n = row.querySelector('.diag-custom-name').value.trim();
+    const p = parseInt(row.querySelector('.diag-custom-price').value) || 0;
+    const qty = parseInt(row.querySelector('.diag-custom-qty').textContent) || 1;
+    if (n && p > 0) items.push({ name: n, price: p, qty: qty, subtotal: p * qty });
+  });
+  return items;
+}
+function addDiagCustomItem() {
+  const area = document.getElementById('diag_custom_items_area');
+  const row = document.createElement('div');
+  row.className = 'diag-custom-row';
+  row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
+  row.innerHTML = '<input type="text" class="diag-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+    + '<input type="number" class="diag-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+    + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+    + '<button type="button" onclick="diagCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
+    + '<span class="diag-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>'
+    + '<button type="button" onclick="diagCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>'
+    + '</div>'
+    + '<button type="button" onclick="this.closest(\'.diag-custom-row\').remove();recalc()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">×</button>';
+  area.appendChild(row);
+}
+function diagCustomQtyChange(btn, delta) {
+  const span = btn.parentElement.querySelector('.diag-custom-qty');
+  let qty = parseInt(span.textContent) || 1;
+  qty = Math.max(1, qty + delta);
+  span.textContent = qty;
+  recalc();
+}
+
+// === 診断見積クーポン ===
+async function applyDiagCoupon() {
+  const code = document.getElementById('diag_coupon_code').value.trim();
+  const res = document.getElementById('diag_coupon_result');
+  if (!code) { res.textContent = 'コードを入力してください'; res.style.color = 'var(--red)'; return; }
+  res.textContent = '確認中...'; res.style.color = '#999';
+  try {
+    const r = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ form_type: 'coupon_lookup', code: code }) });
+    const data = await r.json();
+    if (data.ok) {
+      const newDiscount = Number(data.discount) || 0;
+      const existIdx = diagCoupons.findIndex(function(c) { return c.code === code; });
+      if (existIdx >= 0) { diagCoupons[existIdx].discount = newDiscount; } else { diagCoupons.push({ code: code, discount: newDiscount }); }
+      diagCouponDiscount = diagCoupons.reduce(function(s, c) { return s + c.discount; }, 0);
+      const taxInc = Math.round(diagCouponDiscount * (1 + TAX_RATE));
+      const codeList = diagCoupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
+      res.textContent = 'クーポン適用：' + codeList + '　合計-¥' + diagCouponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
+      res.style.color = 'green';
+    } else {
+      res.textContent = data.error || '無効なコードです';
+      res.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    res.textContent = '通信エラー';
+    res.style.color = 'var(--red)';
+  }
+  recalc();
+}
+
 
 // === 合計再計算 ===
 function recalc() {
@@ -1234,36 +1694,44 @@ function recalc() {
     const _equip = document.getElementById('manual_equipment').value || P.equipment || '';
     const _diagBase = getDiagFee(_equip);
 
-    // 追加条件の行を収集（HC時スキップ）
-    const _invRows = [];
-    if (_addCondVisible) {
-      document.querySelectorAll('#inv_options_area .inv-est-row').forEach(function(row) {
-        const p = parseInt(row.querySelector('.inv-est-price').value) || 0;
-        if (p > 0) _invRows.push({ name: row.dataset.invName, price: p });
+    // 追加条件（診断専用エリア・HC非表示時はスキップ）
+    const _diagInvRows = [];
+    const _diagAddCondEl = document.getElementById('diag_add_conditions_section');
+    const _diagAddCondVisible = _diagAddCondEl && _diagAddCondEl.style.display !== 'none';
+    if (_diagAddCondVisible) {
+      document.querySelectorAll('#diag_inv_options_area .diag-inv-row').forEach(function(row) {
+        const p = parseInt(row.querySelector('.diag-inv-price').value) || 0;
+        if (p > 0) _diagInvRows.push({ name: row.dataset.invName, price: p });
       });
     }
-    // 追加項目（自由入力）を収集
-    const _custRows = [];
-    document.querySelectorAll('#custom_est_items_area .custom-est-row').forEach(function(row) {
-      const n = row.querySelector('.custom-est-name').value.trim();
-      const p = parseInt(row.querySelector('.custom-est-price').value) || 0;
-      if (n && p > 0) _custRows.push({ name: n, price: p });
-    });
+    // 追加項目（診断専用エリア）
+    const _diagCustRows = getDiagCustomItems();
 
-    // 追加行をカードに描画
+    // クーポン
+    const _diagInvEx = _diagInvRows.reduce(function(s, r) { return s + r.price; }, 0);
+    const _diagCustEx = _diagCustRows.reduce(function(s, r) { return s + r.subtotal; }, 0);
+
+    // 追加行をカードに描画（診断費カード内）
     const _extraRowsEl = document.getElementById('diag_est_extra_rows');
     if (_extraRowsEl) {
       _extraRowsEl.innerHTML = '';
-      [..._invRows, ..._custRows].forEach(function(r) {
+      [..._diagInvRows, ..._diagCustRows].forEach(function(r) {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0 6px 16px;border-bottom:1px solid var(--border);font-size:.9rem;color:var(--text-sub)';
         row.innerHTML = '<span>＋ ' + r.name + '</span><span>¥' + r.price.toLocaleString('ja-JP') + '（税抜）</span>';
         _extraRowsEl.appendChild(row);
       });
+      if (diagCouponDiscount > 0) {
+        diagCoupons.forEach(function(cp) {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0 6px 16px;border-bottom:1px solid var(--border);font-size:.9rem;color:#e65100';
+          row.innerHTML = '<span>クーポン（' + cp.code + '）</span><span>-¥' + cp.discount.toLocaleString('ja-JP') + '（税抜）</span>';
+          _extraRowsEl.appendChild(row);
+        });
+      }
     }
 
-    const _extraEx = invSubEx + customSubEx;
-    const _diagTotalEx = _diagBase + _extraEx;
+    const _diagTotalEx = Math.max(0, _diagBase + _diagInvEx + _diagCustEx - diagCouponDiscount);
     const _diagTax = Math.round(_diagTotalEx * TAX_RATE);
     const _diagTotalInc = _diagTotalEx + _diagTax;
 
@@ -1277,19 +1745,62 @@ function recalc() {
     if (_totalEl) _totalEl.textContent = '¥' + _diagTotalInc.toLocaleString('ja-JP');
   }
 
+  // 後日見積（チェックボックス）: チェックON かつ estimate_area表示中のみ計算
+  const _chkEstEl = document.getElementById('chk_estimate');
+  const _estAreaEl = document.getElementById('estimate_area');
+  const _isEstActive = _chkEstEl && _chkEstEl.checked &&
+    _estAreaEl && _estAreaEl.style.display !== 'none';
   let estTotal = 0;
-  REPAIR_MENU.forEach((item, i) => {
-    const el = document.getElementById('est_qty_' + i);
-    if (!el) return;
-    const qty = parseInt(el.textContent) || 0;
-    estTotal += item.price * qty; // price は税抜
-  });
-  const estTaxAmt = Math.round(estTotal * TAX_RATE);
-  const estTotalInc = estTotal + estTaxAmt;
-  document.getElementById('est_subtotal_ex').textContent = '¥' + estTotal.toLocaleString();
+  if (_isEstActive) {
+    REPAIR_MENU.forEach((item, i) => {
+      const el = document.getElementById('est_qty_' + i);
+      if (!el) return;
+      const qty = parseInt(el.textContent) || 0;
+      estTotal += item.price * qty;
+    });
+    // 追加条件（est_inv_options_area）- est_add_conditions_section表示中のみ
+    const _estAddCondEl = document.getElementById('est_add_conditions_section');
+    const _estAddCondVisible = _estAddCondEl && _estAddCondEl.style.display !== 'none';
+    if (_estAddCondVisible) {
+      document.querySelectorAll('#est_inv_options_area .est-inv-row').forEach(function(row) {
+        estTotal += parseInt(row.querySelector('.est-inv-price').value) || 0;
+      });
+    }
+    // 追加項目（自由入力）
+    getEstCustomItems().forEach(function(it) { estTotal += it.subtotal; });
+  }
+  // クーポン
+  const estSubEx = Math.max(0, estTotal - estCouponDiscount); // 後日見積チェックボックス用クーポン
+  const estTaxAmt = Math.round(estSubEx * TAX_RATE);
+  const estTotalInc = estSubEx + estTaxAmt;
+  document.getElementById('est_subtotal_ex').textContent = '¥' + estSubEx.toLocaleString();
   document.getElementById('est_tax_amount').textContent = '¥' + estTaxAmt.toLocaleString();
   document.getElementById('est_tax_rate_label').textContent = Math.round(TAX_RATE * 100);
   document.getElementById('est_total').textContent = '¥' + estTotalInc.toLocaleString();
+  // 内訳描画（後日見積アクティブ時のみ・非アクティブ時はクリア）
+  const _estBreakEl = document.getElementById('est_breakdown_area');
+  if (_estBreakEl && !_isEstActive) { _estBreakEl.innerHTML = ''; }
+  if (_estBreakEl && _isEstActive) {
+    const _rowStyle = 'display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.9rem;';
+    let _bHtml = '';
+    REPAIR_MENU.forEach(function(item, i) {
+      const el = document.getElementById('est_qty_' + i);
+      if (!el) return;
+      const qty = parseInt(el.textContent) || 0;
+      if (qty > 0) _bHtml += '<div style="' + _rowStyle + '"><span>' + item.name + (qty > 1 ? ' ×' + qty : '') + '</span><span>¥' + (item.price * qty).toLocaleString('ja-JP') + '（税抜）</span></div>';
+    });
+    document.querySelectorAll('#est_inv_options_area .est-inv-row').forEach(function(row) {
+      const p = parseInt(row.querySelector('.est-inv-price').value) || 0;
+      if (p > 0) _bHtml += '<div style="' + _rowStyle + '"><span>' + row.dataset.invName + '</span><span>¥' + p.toLocaleString('ja-JP') + '（税抜）</span></div>';
+    });
+    getEstCustomItems().forEach(function(it) {
+      _bHtml += '<div style="' + _rowStyle + '"><span>' + it.name + (it.qty > 1 ? ' ×' + it.qty : '') + '</span><span>¥' + it.subtotal.toLocaleString('ja-JP') + '（税抜）</span></div>';
+    });
+    estCoupons.forEach(function(cp) {
+      _bHtml += '<div style="' + _rowStyle + ';color:#e65100"><span>クーポン（' + cp.code + '）</span><span>-¥' + cp.discount.toLocaleString('ja-JP') + '（税抜）</span></div>';
+    });
+    _estBreakEl.innerHTML = _bHtml;
+  }
 
   let resEstRepairEx = 0;
   REPAIR_MENU.forEach((item, i) => {
@@ -1298,15 +1809,19 @@ function recalc() {
     const qty = parseInt(el.textContent) || 0;
     resEstRepairEx += item.price * qty; // price は税抜
   });
-  getResestCustomItems().forEach(it => { resEstRepairEx += it.subtotal; });
-  // 追加条件（inv_options_area）も加算 - HC非表示時はスキップ
+  // 追加項目（予約見積専用エリア）
+  getResCustomItems().forEach(it => { resEstRepairEx += it.subtotal; });
+  // 追加条件（予約見積専用エリア・HC非表示時はスキップ）
   let resEstInvEx = 0;
-  if (_addCondVisible) {
-    document.querySelectorAll('#inv_options_area .inv-est-row').forEach(function(row) {
-      resEstInvEx += parseInt(row.querySelector('.inv-est-price').value) || 0;
+  const _resAddCondEl = document.getElementById('res_add_conditions_section');
+  const _resAddCondVisible = _resAddCondEl && _resAddCondEl.style.display !== 'none';
+  if (_resAddCondVisible) {
+    document.querySelectorAll('#res_inv_options_area .res-inv-row').forEach(function(row) {
+      resEstInvEx += parseInt(row.querySelector('.res-inv-price').value) || 0;
     });
   }
-  const resEstTotal = resEstRepairEx + resEstInvEx;
+  const resEstSubEx = resEstRepairEx + resEstInvEx - resCouponDiscount;
+  const resEstTotal = Math.max(0, resEstSubEx);
   const resEstTaxAmt = Math.round(resEstTotal * TAX_RATE);
   const resEstTotalInc = resEstTotal + resEstTaxAmt;
   document.getElementById('res_est_subtotal_ex').textContent = '¥' + resEstTotal.toLocaleString();
@@ -1314,9 +1829,12 @@ function recalc() {
   document.getElementById('res_est_tax_rate_label').textContent = Math.round(TAX_RATE * 100);
   document.getElementById('res_est_total').textContent = '¥' + resEstTotalInc.toLocaleString();
 
-  // 見積内訳を描画
+  // 見積内訳を描画（予約見積アクティブ時のみ・非アクティブ時はクリア）
+  const _isResEstNow = document.querySelector('input[name="contract_status"]:checked') &&
+    document.querySelector('input[name="contract_status"]:checked').value === '予約（見積あり）';
   const _resBreakEl = document.getElementById('res_est_breakdown_area');
-  if (_resBreakEl) {
+  if (_resBreakEl && !_isResEstNow) { _resBreakEl.innerHTML = ''; }
+  if (_resBreakEl && _isResEstNow) {
     const _rowStyle = 'display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.9rem;';
     let _html = '';
     // 修理メニュー
@@ -1328,20 +1846,21 @@ function recalc() {
         _html += '<div style="' + _rowStyle + '"><span>' + item.name + (qty > 1 ? ' ×' + qty : '') + '</span><span>¥' + (item.price * qty).toLocaleString('ja-JP') + '（税抜）</span></div>';
       }
     });
-    // 自由入力
-    document.querySelectorAll('#resest_custom_items_area .custom-est-row').forEach(function(row) {
-      const n = row.querySelector('.resest-custom-name').value.trim();
-      const p = parseInt(row.querySelector('.resest-custom-price').value) || 0;
-      const q = parseInt((row.querySelector('.resest-custom-qty') || {}).textContent) || 1;
-      if (n && p > 0) _html += '<div style="' + _rowStyle + '"><span>' + n + (q > 1 ? ' ×' + q : '') + '</span><span>¥' + (p * q).toLocaleString('ja-JP') + '（税抜）</span></div>';
+    // 追加項目（予約見積専用エリア）
+    getResCustomItems().forEach(function(it) {
+      _html += '<div style="' + _rowStyle + '"><span>' + it.name + (it.qty > 1 ? ' ×' + it.qty : '') + '</span><span>¥' + it.subtotal.toLocaleString('ja-JP') + '（税抜）</span></div>';
     });
-    // 追加条件（HC時スキップ）
-    if (_addCondVisible) {
-      document.querySelectorAll('#inv_options_area .inv-est-row').forEach(function(row) {
-        const p = parseInt(row.querySelector('.inv-est-price').value) || 0;
+    // 追加条件（予約見積専用エリア・HC時スキップ）
+    if (_resAddCondVisible) {
+      document.querySelectorAll('#res_inv_options_area .res-inv-row').forEach(function(row) {
+        const p = parseInt(row.querySelector('.res-inv-price').value) || 0;
         if (p > 0) _html += '<div style="' + _rowStyle + '"><span>' + row.dataset.invName + '</span><span>¥' + p.toLocaleString('ja-JP') + '（税抜）</span></div>';
       });
     }
+    // クーポン行
+    resCoupons.forEach(function(cp) {
+      _html += '<div style="' + _rowStyle + ';color:#e65100"><span>クーポン（' + cp.code + '）</span><span>-¥' + cp.discount.toLocaleString('ja-JP') + '（税抜）</span></div>';
+    });
     _resBreakEl.innerHTML = _html;
   }
 }
@@ -1374,6 +1893,8 @@ document.querySelectorAll('input[name="payment"]').forEach(radio => {
 // === 手入力モード：作業種別切替（故障診断 / 修理） ===
 function onWorkTypeChange() {
   const val = document.querySelector('input[name="manual_work_type"]:checked').value;
+  // 切替時は必ず修理メニュー数量をリセット
+  resetRepairMenuQty('');
   if (val === '修理') {
     P.is_repair = true;
     P.initial_fee = 0;
@@ -1401,6 +1922,19 @@ function onStatusChange() {
 
     document.getElementById('section_kankou').classList.toggle('hidden', !(isKankou || isDiagEst || isReserveEst));
     document.getElementById('section_reserve_est').classList.toggle('hidden', !isReserveEst);
+    // 予約見積あり・診断見積のみ時はチェックボックスを非表示
+    document.getElementById('toggle_estimate_box').style.display = (isReserveEst || isDiagEst) ? 'none' : '';
+    // 予約見積あり・診断見積のみ時は完工専用UIを非表示
+    const _isResOrDiag = isReserveEst || isDiagEst;
+    document.getElementById('add_conditions_section').style.display = (currentIsHC || _isResOrDiag) ? 'none' : '';
+    // 今日やった追加作業：ステータス非対象 or 故障診断モード or HC のとき非表示
+    const _workTypeNow = (document.querySelector('input[name="manual_work_type"]:checked') || {}).value;
+    const _isWorkTypeDiag = (_workTypeNow !== '修理');
+    document.getElementById('today_repairs_section').style.display = (_isResOrDiag || _isWorkTypeDiag || currentIsHC) ? 'none' : '';
+    document.getElementById('kankou_custom_section').style.display = _isResOrDiag ? 'none' : '';
+    document.getElementById('kankou_coupon_section').style.display = _isResOrDiag ? 'none' : '';
+    document.getElementById('kankou_total_section').style.display = _isResOrDiag ? 'none' : '';
+    document.getElementById('payment_section').style.display = _isResOrDiag ? 'none' : '';
     document.getElementById('section_diag_est').classList.toggle('hidden', !isDiagEst);
     document.getElementById('section_reason').classList.toggle('hidden', !(isLoss || isCancel));
     document.getElementById('section_reserve_datetime').classList.toggle('hidden', !isReserve);
@@ -1429,6 +1963,11 @@ function onStatusChange() {
     document.getElementById('notice_reserve_no').classList.toggle('hidden', !isReserveNo);
     document.getElementById('notice_hold').classList.toggle('hidden', !isHold);
     document.getElementById('notice_diag_est').classList.toggle('hidden', !isDiagEst);
+
+    // 完工以外に切り替えたとき支払い方法をリセット
+    if (!isKankou) {
+      resetPaymentMethod();
+    }
 
     const btn = document.getElementById('btn_submit');
     btn.className = 'btn-submit';
@@ -1581,23 +2120,40 @@ async function submitReport() {
   if (isKankou && document.getElementById('chk_estimate').checked) {
     hasEstimate = true;
     estItems = getSelectedItems('est');
+    // 追加条件（est_inv_options_area）
+    document.querySelectorAll('#est_inv_options_area .est-inv-row').forEach(function(row) {
+      const p = parseInt(row.querySelector('.est-inv-price').value) || 0;
+      if (p > 0) estItems.push({ name: row.dataset.invName, price: p, qty: 1, subtotal: p });
+    });
+    // 追加項目（自由入力）
+    getEstCustomItems().forEach(function(item) { estItems.push(item); });
+    // クーポン行（後日見積チェックボックス用）
+    estCoupons.forEach(function(cp) {
+      estItems.push({ name: 'クーポン割引（' + cp.code + '）', price: -cp.discount, qty: 1, subtotal: -cp.discount });
+    });
     estItems.forEach(it => estTotal += it.subtotal);
+    estTotal = Math.max(0, estTotal);
     estExpiry = document.getElementById('est_expiry').value;
     estNote = document.getElementById('est_note').value;
   } else if (isReserveEst) {
     hasEstimate = true;
     estItems = getSelectedItems('resest');
-    getResestCustomItems().forEach(function(item) { estItems.push(item); });
-    // 追加条件（inv_options_area）も追加 - HC時スキップ
-    const _condVisR = document.getElementById('add_conditions_section') &&
-      document.getElementById('add_conditions_section').style.display !== 'none';
-    if (_condVisR) {
-      document.querySelectorAll('#inv_options_area .inv-est-row').forEach(function(row) {
-        const p = parseInt(row.querySelector('.inv-est-price').value) || 0;
+    // 追加条件
+    const _resAddCond2 = document.getElementById('res_add_conditions_section');
+    if (_resAddCond2 && _resAddCond2.style.display !== 'none') {
+      document.querySelectorAll('#res_inv_options_area .res-inv-row').forEach(function(row) {
+        const p = parseInt(row.querySelector('.res-inv-price').value) || 0;
         if (p > 0) estItems.push({ name: row.dataset.invName, price: p, qty: 1, subtotal: p });
       });
     }
+    // 追加項目
+    getResCustomItems().forEach(function(item) { estItems.push(item); });
+    // クーポン
+    resCoupons.forEach(function(cp) {
+      estItems.push({ name: 'クーポン割引（' + cp.code + '）', price: -cp.discount, qty: 1, subtotal: -cp.discount });
+    });
     estItems.forEach(it => estTotal += it.subtotal);
+    estTotal = Math.max(0, estTotal);
     estExpiry = document.getElementById('res_est_expiry').value;
     estNote = document.getElementById('res_est_note').value;
   }
@@ -1622,7 +2178,10 @@ async function submitReport() {
     today_repairs: todayItems,  // 全て税抜
     today_repair_total: todayRepairTotal,  // 税抜合計
     coupon_discount: couponDiscount || 0,  // 税抜割引額
-    coupon_codes: coupons.map(function(c){ return c.code; }).join(','),
+    coupon_codes: (function() {
+      var allCodes = coupons.concat(resCoupons).concat(estCoupons).concat(diagCoupons).map(function(c){ return c.code; });
+      return allCodes.filter(function(v, i, a){ return a.indexOf(v) === i; }).join(',');
+    })(),
     today_total: isKankou ? Math.round(Math.max(0, diagFeeEx + todayRepairTotal - (couponDiscount||0)) * (1 + TAX_RATE)) : 0,  // 税込合計
     payment_method: isKankou ? document.querySelector('input[name="payment"]:checked').value : '',
     transfer_deadline: (() => {
@@ -1645,18 +2204,19 @@ async function submitReport() {
     diag_estimate_fee: isDiagEst ? getDiagFee(P.equipment) : 0,  // 税抜
     diag_estimate_extra: isDiagEst ? (() => {
       const rows = [];
-      const _condVisD = document.getElementById('add_conditions_section') &&
-        document.getElementById('add_conditions_section').style.display !== 'none';
+      const _diagAddCondEl = document.getElementById('diag_add_conditions_section');
+      const _condVisD = _diagAddCondEl && _diagAddCondEl.style.display !== 'none';
       if (_condVisD) {
-        document.querySelectorAll('#inv_options_area .inv-est-row').forEach(function(row) {
-          const p = parseInt(row.querySelector('.inv-est-price').value) || 0;
+        document.querySelectorAll('#diag_inv_options_area .diag-inv-row').forEach(function(row) {
+          const p = parseInt(row.querySelector('.diag-inv-price').value) || 0;
           if (p > 0) rows.push({ name: row.dataset.invName, price: p, qty: 1, subtotal: p });
         });
       }
-      document.querySelectorAll('#custom_est_items_area .custom-est-row').forEach(function(row) {
-        const n = row.querySelector('.custom-est-name').value.trim();
-        const p = parseInt(row.querySelector('.custom-est-price').value) || 0;
-        if (n && p > 0) rows.push({ name: n, price: p, qty: 1, subtotal: p });
+      getDiagCustomItems().forEach(function(it) {
+        rows.push({ name: it.name, price: it.price, qty: it.qty, subtotal: it.subtotal });
+      });
+      diagCoupons.forEach(function(cp) {
+        rows.push({ name: 'クーポン割引（' + cp.code + '）', price: -cp.discount, qty: 1, subtotal: -cp.discount });
       });
       return rows;
     })() : [],
