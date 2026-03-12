@@ -809,7 +809,7 @@ async function applyCoupon() {
     if (data.ok) {
       couponDiscount = Number(data.discount) || 0;
       const taxInc = Math.round(couponDiscount * (1 + TAX_RATE));
-      res.textContent = 'クーポン適用完了：-' + taxInc.toLocaleString() + '円（税込）';
+      res.textContent = 'クーポン適用完了：-' + couponDiscount.toLocaleString() + '円（税抜）/ -' + taxInc.toLocaleString() + '円（税込）';
       res.style.color = 'var(--green)';
     } else {
       couponDiscount = 0;
@@ -956,7 +956,7 @@ function getInvOptions() {
   const items = [];
   document.querySelectorAll('.inv-item-row').forEach(row => {
     const rawPrice = parseInt(row.querySelector('.inv-price').value) || 0;
-    if (rawPrice > 0) { const price = Math.round(rawPrice * (1 + TAX_RATE)); items.push({ name: row.dataset.invName, price: price }); }
+    if (rawPrice > 0) { items.push({ name: row.dataset.invName, price: rawPrice }); }  // 税抜のまま
   });
   return items;
 }
@@ -973,7 +973,7 @@ function calculateRepairTotal() {
   let total = 0;
   document.querySelectorAll('.repair-item-row').forEach(row => {
     const cnt = parseInt(row.querySelector('.count-num').textContent);
-    if (cnt > 0) total += Math.round(parseInt(row.dataset.price) * (1 + TAX_RATE)) * cnt;
+    if (cnt > 0) total += parseInt(row.dataset.price) * cnt;  // 税抜
   });
   getCustomItems().forEach(c => { total += c.subtotal; });
   return total;
@@ -1016,12 +1016,12 @@ function nextStep() {
       const inv = getInvOptions();
       const customs = getCustomItems();
       const allExtras = [
-        ...inv.map(v => v.name + (v.price ? '(¥'+v.price.toLocaleString()+')' : '')),
+        ...inv.map(v => v.name + (v.price ? '(¥'+v.price.toLocaleString()+'税抜)' : '')),
         ...customs.map(c => c.name + '(¥'+c.subtotal.toLocaleString()+')')
       ];
       if (allExtras.length) extra = '<br><span style="font-size:.85rem;color:#666">└ ' + allExtras.join('、') + '</span>';
     }
-    let disc = couponDiscount > 0 ? '<br><span style="color:#e65100;font-weight:bold">※クーポン適用：-' + Math.round(couponDiscount*(1+TAX_RATE)).toLocaleString() + '円（税込）</span>' : '';
+    let disc = couponDiscount > 0 ? '<br><span style="color:#e65100;font-weight:bold">※クーポン適用：-' + couponDiscount.toLocaleString() + '円（税抜）</span>' : '';
 
     document.getElementById('confirmContent').innerHTML =
       '<div class="confirm-row"><span class="confirm-label">案件番号</span><span class="confirm-val">' + d.case_id + '</span></div>' +
@@ -1054,15 +1054,14 @@ function nextStep() {
         + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + diagEx.toLocaleString() + '円</td>'
         + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">1</td>'
         + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + diagEx.toLocaleString() + '円</td></tr>';
-      const inv = getInvOptions(); // getInvOptions は税込を返す → 税抜に戻す
+      const inv = getInvOptions(); // 税抜を返す
       inv.forEach(v => {
         if (v.price > 0) {
-          const priceEx = Math.round(v.price / (1 + TAX_RATE));
-          subtotalEx += priceEx;
+          subtotalEx += v.price;
           estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd">' + v.name + '</td>'
-            + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + priceEx.toLocaleString() + '円</td>'
+            + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + v.price.toLocaleString() + '円</td>'
             + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">1</td>'
-            + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + priceEx.toLocaleString() + '円</td></tr>';
+            + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + v.price.toLocaleString() + '円</td></tr>';
         } else {
           estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666;font-size:.85rem">' + v.name + '</td>'
             + '<td colspan="3" style="padding:8px;border-bottom:1px solid #ddd;color:#666;font-size:.85rem;text-align:right">※現地確認後にご案内</td></tr>';
@@ -1086,12 +1085,11 @@ function nextStep() {
     }
 
     getCustomItems().forEach(item => {
-      // getCustomItems()はtaxInc済みを返す → 税抜に戻す
-      const priceEx = Math.round(item.price / (1 + TAX_RATE));
-      const subEx = priceEx * item.qty;
+      // getCustomItems()は税抜を返す
+      const subEx = item.price * item.qty;
       subtotalEx += subEx;
       estRows += '<tr><td style="padding:8px;border-bottom:1px solid #ddd">' + item.name + '</td>'
-        + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + priceEx.toLocaleString() + '円</td>'
+        + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + item.price.toLocaleString() + '円</td>'
         + '<td style="padding:8px;text-align:center;border-bottom:1px solid #ddd">' + item.qty + '</td>'
         + '<td style="padding:8px;text-align:right;border-bottom:1px solid #ddd">' + subEx.toLocaleString() + '円</td></tr>';
     });
@@ -1156,8 +1154,7 @@ async function doSubmit() {
     orderItems.push({ name: '故障診断（' + (equip || 'ルームエアコン') + '）', price: diagFee, qty: 1, subtotal: diagFee });
     getInvOptions().forEach(v => {
       if (v.price > 0) {
-        const priceEx = Math.round(v.price / (1 + TAX_RATE));  // getInvOptionsは税込返すので税抜に戻す
-        orderItems.push({ name: v.name, price: priceEx, qty: 1, subtotal: priceEx });
+        orderItems.push({ name: v.name, price: v.price, qty: 1, subtotal: v.price });  // 税抜
       }
     });
   } else {
