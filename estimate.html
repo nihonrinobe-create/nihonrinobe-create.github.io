@@ -1260,6 +1260,14 @@ function syncManualInputs() {
           // 診断案件（hasDiagFee=true）は P.initial_fee を保持し P.is_repair=false のまま
         }
 
+        // ★ 作業種別が「修理」なら修理モードに自動切替
+        if (r.order_type && r.order_type.indexOf('修理') > -1) {
+          P.is_repair = true;
+          P.initial_fee = 0;
+          var diagRadio = document.querySelector('input[name="manual_work_type"][value="修理"]');
+          if (diagRadio) diagRadio.checked = true;
+        }
+
         // ★ 担当者名を自動表示
         if (P.staff_id) {
           try {
