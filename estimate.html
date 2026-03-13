@@ -957,9 +957,6 @@ function initUI() {
   updateEquipOptions(casePrefix, P.equipment);
   applyPrefixUI(casePrefix);
 
-  // ★ 修理案件モードを適用
-  applyRepairMode();
-
   // ★ パラメータあり修理案件: P.is_repair=true なら today_repairs_section を表示
   // （applyPrefixUI時点では manual_work_type が「診断」デフォルトのため非表示になるため上書き）
   if (P.is_repair) {
@@ -1301,16 +1298,18 @@ function syncManualInputs() {
   }
   initUI();
 
-  // ★ 修理案件の再設定（initUI/applyPrefixUIがP.is_repairをリセットするため、initUI後に再適用）
+ // ★ 修理案件の再設定（initUI/applyPrefixUIがP.is_repairをリセットするため、initUI後に再適用）
   if (P.order_type && P.order_type.indexOf('修理') > -1) {
     P.is_repair = true;
     P.initial_fee = 0;
     var repairRadio = document.querySelector('input[name="manual_work_type"][value="修理"]');
     if (repairRadio) repairRadio.checked = true;
     document.getElementById('today_repairs_section').style.display = '';
-    applyRepairMode();
-    recalc();
   }
+
+  // ★ order_items展開（修理/非修理どちらでも1回だけ実行）
+  applyRepairMode();
+  recalc();
 
   // mode=invoice : 業務報告フォームを隠して請求書発行ボタンだけ表示
  if (params.get('mode') === 'invoice') {
