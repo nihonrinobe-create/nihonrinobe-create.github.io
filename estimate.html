@@ -2173,11 +2173,11 @@ async function submitReport() {
     });
   }
 
-  // ★ 完工＋修理モード: 追加作業が0件（クーポン行のみ）ならエラー
-  if (isKankou && P.is_repair) {
+  // ★ 完工＋修理モード or HC清掃: 作業項目が0件（クーポン行のみ）ならエラー
+  if (isKankou && (P.is_repair || currentIsHC)) {
     var realTodayItems = todayItems.filter(function(it) { return !it.name.startsWith('クーポン'); });
     if (realTodayItems.length === 0) {
-      alert('追加作業を1つ以上入力してください');
+      alert('作業項目を1つ以上入力してください');
       btn.disabled = false;
       btn.textContent = '完了報告を送信';
       return;
