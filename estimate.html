@@ -1260,16 +1260,8 @@ function syncManualInputs() {
           // 診断案件（hasDiagFee=true）は P.initial_fee を保持し P.is_repair=false のまま
         }
 
-        // ★ 作業種別が「修理」なら修理モードに自動切替
-        if (r.order_type && r.order_type.indexOf('修理') > -1) {
-          P.is_repair = true;
-          P.initial_fee = 0;
-          var repairRadio = document.querySelector('input[name="manual_work_type"][value="修理"]');
-          if (repairRadio) {
-            repairRadio.checked = true;
-            document.getElementById('today_repairs_section').style.display = '';
-          }
-        }
+        // ★ 作業種別を保存（initUI後に使用）
+        P.order_type = r.order_type || '';
         
         // ★ 担当者名を自動表示
         if (P.staff_id) {
@@ -1308,6 +1300,17 @@ function syncManualInputs() {
     document.getElementById('h_name').textContent = P.name || '未設定';
   }
   initUI();
+
+  // ★ 修理案件の再設定（initUI/applyPrefixUIがP.is_repairをリセットするため、initUI後に再適用）
+  if (P.order_type && P.order_type.indexOf('修理') > -1) {
+    P.is_repair = true;
+    P.initial_fee = 0;
+    var repairRadio = document.querySelector('input[name="manual_work_type"][value="修理"]');
+    if (repairRadio) repairRadio.checked = true;
+    document.getElementById('today_repairs_section').style.display = '';
+    applyRepairMode();
+    recalc();
+  }
 
   // mode=invoice : 業務報告フォームを隠して請求書発行ボタンだけ表示
  if (params.get('mode') === 'invoice') {
