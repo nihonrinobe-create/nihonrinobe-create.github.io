@@ -789,6 +789,45 @@ function fmtBreakdownPrice(unitPrice, qty) {
 let diagCoupons = []; // [{code, discount}] 診断見積用クーポン配列
 let diagCouponDiscount = 0;
 
+// === クーポン取り消し対応：タグ表示ヘルパー（×ボタン付き＋合計表示） ===
+function renderCouponTags_(arr, elId, removeFuncName) {
+  var el = document.getElementById(elId);
+  if (!arr || arr.length === 0) { el.innerHTML = ''; return; }
+  var totalEx = arr.reduce(function(s, c) { return s + c.discount; }, 0);
+  var totalInc = Math.round(totalEx * (1 + TAX_RATE));
+  var html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">' + arr.map(function(c, i) {
+    return '<span style="display:inline-flex;align-items:center;gap:4px;background:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:5px 10px;font-size:.85rem;font-weight:600">'
+      + c.code + ' (-\u00a5' + c.discount.toLocaleString() + ')'
+      + '<button type="button" onclick="' + removeFuncName + '(' + i + ')" style="background:none;border:none;color:#c62828;font-weight:700;cursor:pointer;font-size:1.1rem;padding:0 2px;line-height:1">\u00d7</button></span>';
+  }).join('') + '</div>';
+  html += '<div style="font-size:.82rem;color:#2e7d32;margin-top:4px">\u5408\u8a08 -\u00a5' + totalEx.toLocaleString() + '\uff08\u7a0e\u629c\uff09/ -\u00a5' + totalInc.toLocaleString() + '\uff08\u7a0e\u8fbc\uff09</div>';
+  el.innerHTML = html;
+}
+function removeEstCoupon(idx) {
+  coupons.splice(idx, 1);
+  couponDiscount = coupons.reduce(function(s, c) { return s + c.discount; }, 0);
+  renderCouponTags_(coupons, 'est_coupon_result', 'removeEstCoupon');
+  recalc();
+}
+function removeResCoupon(idx) {
+  resCoupons.splice(idx, 1);
+  resCouponDiscount = resCoupons.reduce(function(s, c) { return s + c.discount; }, 0);
+  renderCouponTags_(resCoupons, 'res_est_coupon_result', 'removeResCoupon');
+  recalc();
+}
+function removeEstCoupon2(idx) {
+  estCoupons.splice(idx, 1);
+  estCouponDiscount = estCoupons.reduce(function(s, c) { return s + c.discount; }, 0);
+  renderCouponTags_(estCoupons, 'est_chk_coupon_result', 'removeEstCoupon2');
+  recalc();
+}
+function removeDiagCoupon(idx) {
+  diagCoupons.splice(idx, 1);
+  diagCouponDiscount = diagCoupons.reduce(function(s, c) { return s + c.discount; }, 0);
+  renderCouponTags_(diagCoupons, 'diag_coupon_result', 'removeDiagCoupon');
+  recalc();
+}
+
 const REPAIR_MENU = [
   { name: '冷媒ガス注入（500gまで）', price: 27000 },
   { name: '冷媒ガス追加（100g）', price: 3000 },
@@ -1243,13 +1282,7 @@ function syncManualInputs() {
         });
         couponDiscount = coupons.reduce(function(s, c) { return s + c.discount; }, 0);
         if (coupons.length > 0) {
-          const couponRes = document.getElementById('est_coupon_result');
-          if (couponRes) {
-            const taxInc = Math.round(couponDiscount * (1 + TAX_RATE));
-            const codeList = coupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
-            couponRes.textContent = 'クーポン適用済：' + codeList + '　合計-¥' + couponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
-            couponRes.style.color = 'var(--green, #388e3c)';
-          }
+          renderCouponTags_(coupons, 'est_coupon_result', 'removeEstCoupon');
         }
 
         const repairItems = (r.order_items || []).filter(function(it) {
@@ -1480,10 +1513,7 @@ async function applyEstCoupon() {
       const existIdx = coupons.findIndex(function(c) { return c.code === newCode; });
       if (existIdx >= 0) { coupons[existIdx].discount = newDiscount; } else { coupons.push({ code: newCode, discount: newDiscount }); }
       couponDiscount = coupons.reduce(function(s, c) { return s + c.discount; }, 0);
-      const taxInc = Math.round(couponDiscount * (1 + TAX_RATE));
-      const codeList = coupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
-      res.textContent = 'クーポン適用：' + codeList + '　合計-¥' + couponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
-      res.style.color = 'green';
+      renderCouponTags_(coupons, 'est_coupon_result', 'removeEstCoupon');
     } else {
       couponDiscount = 0;
       res.textContent = data.error || '無効なコードです';
@@ -1511,10 +1541,7 @@ async function applyEstCoupon2() {
       const existIdx = estCoupons.findIndex(function(c) { return c.code === code; });
       if (existIdx >= 0) { estCoupons[existIdx].discount = newDiscount; } else { estCoupons.push({ code: code, discount: newDiscount }); }
       estCouponDiscount = estCoupons.reduce(function(s, c) { return s + c.discount; }, 0);
-      const taxInc = Math.round(estCouponDiscount * (1 + TAX_RATE));
-      const codeList = estCoupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
-      res.textContent = 'クーポン適用：' + codeList + '　合計-¥' + estCouponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
-      res.style.color = 'green';
+      renderCouponTags_(estCoupons, 'est_chk_coupon_result', 'removeEstCoupon2');
     } else {
       res.textContent = data.error || '無効なコードです';
       res.style.color = 'var(--red)';
@@ -1603,10 +1630,7 @@ async function applyResCoupon() {
       const existIdx = resCoupons.findIndex(function(c) { return c.code === code; });
       if (existIdx >= 0) { resCoupons[existIdx].discount = newDiscount; } else { resCoupons.push({ code: code, discount: newDiscount }); }
       resCouponDiscount = resCoupons.reduce(function(s, c) { return s + c.discount; }, 0);
-      const taxInc = Math.round(resCouponDiscount * (1 + TAX_RATE));
-      const codeList = resCoupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
-      res.textContent = 'クーポン適用：' + codeList + '　合計-¥' + resCouponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
-      res.style.color = 'green';
+      renderCouponTags_(resCoupons, 'res_est_coupon_result', 'removeResCoupon');
     } else {
       res.textContent = data.error || '無効なコードです';
       res.style.color = 'var(--red)';
@@ -1666,10 +1690,7 @@ async function applyDiagCoupon() {
       const existIdx = diagCoupons.findIndex(function(c) { return c.code === code; });
       if (existIdx >= 0) { diagCoupons[existIdx].discount = newDiscount; } else { diagCoupons.push({ code: code, discount: newDiscount }); }
       diagCouponDiscount = diagCoupons.reduce(function(s, c) { return s + c.discount; }, 0);
-      const taxInc = Math.round(diagCouponDiscount * (1 + TAX_RATE));
-      const codeList = diagCoupons.map(function(c) { return c.code + '(-¥' + c.discount.toLocaleString() + ')'; }).join('・');
-      res.textContent = 'クーポン適用：' + codeList + '　合計-¥' + diagCouponDiscount.toLocaleString() + '（税抜）/ -¥' + taxInc.toLocaleString() + '（税込）';
-      res.style.color = 'green';
+      renderCouponTags_(diagCoupons, 'diag_coupon_result', 'removeDiagCoupon');
     } else {
       res.textContent = data.error || '無効なコードです';
       res.style.color = 'var(--red)';
