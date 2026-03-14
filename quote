@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>見積書 編集・再発行</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#0055a4;--blue-dark:#003d7a;--blue-light:#e8f2fc;--green:#2e7d32;--green-light:#e8f5e9;--red:#c62828;--bg:#f5f7fa;--card:#fff;--text:#1a1a1a;--text-sub:#5f6368;--border:#dce1e8;--radius:14px;--orange:#e65100;--orange-bg:#fff3e0;--purple:#5c2d91;--purple-light:#f3e5f5}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:100px}
+.hero{background:linear-gradient(160deg,var(--purple),#3a1a5e);color:#fff;padding:24px 20px;text-align:center}
+.hero h1{font-size:1.3rem;font-weight:700}.hero .case-info{font-size:.9rem;opacity:.9;margin-top:6px}
+.container{max-width:520px;margin:0 auto;padding:15px 20px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 2px 8px rgba(0,0,0,.06);padding:18px;margin-bottom:14px;border:1px solid var(--border)}
+.card-title{font-weight:700;color:var(--blue);margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:1rem}
+.section-title{font-weight:700;font-size:.95rem;margin:16px 0 10px;padding:8px 12px;background:var(--blue-light);border-radius:8px;color:var(--blue)}
+.field{margin-bottom:14px}.field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:5px}
+.field input,.field textarea,.field select{width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem;background:#fff}
+.field-hint{font-size:.75rem;color:var(--text-sub);margin-top:4px}
+.hidden{display:none!important}
+.repair-item{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+.repair-item.active{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue) inset}
+.repair-name{font-size:.9rem;font-weight:500;flex:1}.repair-price-tag{font-size:.8rem;color:var(--text-sub);display:block}
+.counter{display:flex;align-items:center;gap:8px}
+.counter button{width:30px;height:30px;border-radius:50%;border:none;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.counter .minus{background:#eee;color:#555}.counter .plus{background:var(--blue);color:#fff}
+.counter .num{font-weight:700;width:20px;text-align:center}
+.total-box{background:var(--purple-light);border:2px solid var(--purple);border-radius:12px;padding:16px;text-align:center;margin:12px 0}
+.total-label{font-size:.9rem;color:var(--purple);font-weight:600}
+.total-amount{font-size:1.8rem;font-weight:800;color:var(--purple)}
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.type-label{border:2px solid var(--border);border-radius:10px;padding:14px 8px;text-align:center;font-size:.9rem;font-weight:700;cursor:pointer;background:#fff;transition:all .2s}
+.type-label input{display:none}
+.type-label:has(input:checked){border-color:var(--purple);background:var(--purple-light);color:var(--purple)}
+.btn-submit{display:block;width:100%;padding:16px;border-radius:12px;border:none;font-size:1.1rem;font-weight:700;cursor:pointer;margin-top:12px;background:var(--purple);color:#fff}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed}
+.lookup-box{background:var(--card);border-radius:var(--radius);box-shadow:0 2px 8px rgba(0,0,0,.06);padding:24px;margin-bottom:14px;border:1px solid var(--border);text-align:center}
+.lookup-box .error-msg{color:var(--red);font-weight:600;margin-top:10px;font-size:.9rem}
+.guide-btns{display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap}
+.guide-btns a{padding:10px 16px;border-radius:8px;background:var(--blue);color:#fff;text-decoration:none;font-size:.85rem;font-weight:600}
+.ver-select{padding:10px;border:2px solid var(--purple);border-radius:8px;font-size:1rem;font-weight:600;color:var(--purple);background:#fff;width:100%}
+.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:.9rem}
+.info-label{color:var(--text-sub);font-weight:500}.info-val{font-weight:600;text-align:right;max-width:60%;word-break:break-all}
+.complete-msg{text-align:center;padding:30px 20px}.complete-msg h2{color:var(--purple);margin-bottom:8px}
+.complete-links{margin-top:16px}
+.complete-links a{display:block;padding:14px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.95rem;margin-bottom:8px;text-align:center}
+.complete-links .link-invoice{background:var(--blue-light);color:var(--blue);border:2px solid var(--blue)}
+.complete-links .link-edit{background:var(--purple-light);color:var(--purple);border:2px solid var(--purple)}
+.email-warn{color:var(--red);font-weight:600;font-size:.85rem;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>📄 見積書 編集・再発行</h1>
+  <div class="case-info">案件番号: <span id="h_case_id">---</span> ／ <span id="h_name">---</span> 様</div>
+</div>
+<div class="container">
+  <!-- 読み込みUI -->
+  <div id="lookup_view" class="hidden">
+    <div class="lookup-box">
+      <div class="card-title" style="justify-content:center">🔍 案件番号を入力</div>
+      <div style="display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;margin:12px 0">
+        <select id="lk_prefix" onchange="lkPrefixChange()" style="padding:10px 8px;border:2px solid var(--border);border-radius:8px;font-size:1rem;font-weight:700;color:var(--blue);background:#fff;min-width:70px">
+          <option value="YA">YA</option><option value="HM">HM</option><option value="CP">CP</option><option value="EC">EC</option><option value="HC">HC</option>
+        </select>
+        <select id="lk_alpha" style="padding:10px 8px;border:2px solid var(--blue);border-radius:8px;font-size:1rem;font-weight:700;color:var(--blue);background:#e8f2fc;min-width:58px;display:none">
+          <option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option><option>I</option><option>J</option><option>K</option><option>L</option><option>M</option><option>N</option><option>O</option><option>P</option><option>Q</option><option>R</option><option>S</option><option>T</option><option>U</option><option>V</option><option>W</option><option>X</option><option>Y</option><option>Z</option>
+        </select>
+        <span style="font-weight:700;font-size:1.1rem;color:#999">-</span>
+        <input type="text" id="lk_number" placeholder="12345678" inputmode="numeric" style="flex:1;min-width:120px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
+      </div>
+      <button type="button" onclick="doLookup()" style="padding:12px 32px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer">読み込み</button>
+      <div id="lk_error"></div>
+      <div id="lk_guide" class="hidden">
+        <div class="guide-btns">
+          <a id="lk_link_order" href="#">注文フォームを開く</a>
+          <a id="lk_link_report" href="#">業務報告フォームを開く</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- メイン編集画面 -->
+  <div id="main_view" class="hidden">
+    <div class="card">
+      <div class="card-title">🏠 お客様情報</div>
+      <div class="info-row"><span class="info-label">案件番号</span><span class="info-val" id="d_case_id"></span></div>
+      <div class="info-row"><span class="info-label">お客様名</span><span class="info-val" id="d_name"></span></div>
+      <div class="info-row"><span class="info-label">電話番号</span><span class="info-val" id="d_tel"></span></div>
+      <div class="info-row"><span class="info-label">住所</span><span class="info-val" id="d_address"></span></div>
+      <div class="info-row"><span class="info-label">作業対象</span><span class="info-val" id="d_equipment"></span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">👤 担当者</div>
+      <div class="field"><label>担当者番号</label>
+        <input type="text" id="q_staff_id" placeholder="例：0001" inputmode="numeric" onblur="lookupStaff()">
+        <div id="q_staff_name" style="margin-top:5px;font-size:.85rem;font-weight:600;color:#2e7d32"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📧 メールアドレス</div>
+      <div class="field">
+        <input type="email" id="q_email" placeholder="example@email.com" oninput="toggleEmailWarn()">
+        <div id="q_email_warn" class="email-warn hidden">メールアドレスを入力してください</div>
+      </div>
+    </div>
+    <div id="version_select_area" class="card hidden">
+      <div class="card-title">📋 ベースにする版を選択</div>
+      <select id="q_base_ver" class="ver-select" onchange="onVersionChange()"></select>
+    </div>
+    <div class="card">
+      <div class="card-title">📝 発行する書類の種別</div>
+      <div class="type-grid" id="doc_type_grid">
+        <label class="type-label"><input type="radio" name="q_doc_type" value="見積書" checked onchange="updateVerInfo()">📄 見積書</label>
+        <label class="type-label" id="opt_diag_type"><input type="radio" name="q_doc_type" value="診断見積書" onchange="updateVerInfo()">📋 診断見積書</label>
+      </div>
+    </div>
+    <div id="repair_menu_section">
+      <div class="section-title">🔧 修理メニュー</div>
+      <div class="card" id="q_repair_menu"></div>
+    </div>
+    <div id="add_cond_section">
+      <div class="section-title">📋 追加条件</div>
+      <div class="card">
+        <div style="font-size:.82rem;color:var(--text-sub);margin-bottom:10px">該当する項目に金額を入力してください</div>
+        <div id="q_add_cond_area">
+          <div class="q-cond-row" data-cond-name="高所危険作業" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px"><span style="font-size:.9rem;font-weight:600;flex:1">高所危険作業</span><input type="number" class="q-cond-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="qRecalc()"></div>
+          <div class="q-cond-row" data-cond-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px"><span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span><input type="number" class="q-cond-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="qRecalc()"></div>
+          <div class="q-cond-row" data-cond-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px"><span style="font-size:.9rem;font-weight:600;flex:1">室外機特殊設置</span><input type="number" class="q-cond-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="qRecalc()"></div>
+          <div class="q-cond-row" data-cond-name="電気系統調査" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px"><span style="font-size:.9rem;font-weight:600;flex:1">電気系統調査</span><input type="number" class="q-cond-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="qRecalc()"></div>
+        </div>
+      </div>
+    </div>
+    <div id="custom_section">
+      <div class="section-title">✏️ 追加項目（自由入力）</div>
+      <div class="card">
+        <div id="q_custom_area">
+          <div class="q-custom-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
+            <input type="text" class="q-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="qRecalc()">
+            <input type="number" class="q-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="qRecalc()">
+            <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+              <button type="button" onclick="qCustomQty(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>
+              <span class="q-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>
+              <button type="button" onclick="qCustomQty(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="addQCustom()" style="background:#eee;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:.85rem;cursor:pointer;margin-top:4px">＋ 項目を追加</button>
+      </div>
+    </div>
+    <div class="card" id="coupon_section">
+      <label style="font-weight:600;font-size:.9rem">🏷 クーポンコード</label>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input type="text" id="q_coupon_code" placeholder="コードを入力" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem">
+        <button type="button" onclick="applyQCoupon()" style="padding:10px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer">適用</button>
+      </div>
+      <div id="q_coupon_result" style="font-size:.85rem;margin-top:5px;font-weight:bold"></div>
+    </div>
+    <div class="total-box">
+      <div id="q_breakdown_area" style="margin-bottom:8px;text-align:left"></div>
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#5c2d91;margin-bottom:4px"><span>合計（税抜）</span><span id="q_subtotal_ex">¥0</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#5c2d91;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)"><span>消費税（10%）</span><span id="q_tax_amount">¥0</span></div>
+      <div class="total-label">見積り合計（税込）</div>
+      <div class="total-amount" id="q_total">¥0</div>
+    </div>
+    <div class="card">
+      <div class="field"><label>見積り有効期限</label><input type="date" id="q_expiry"></div>
+      <div class="field"><label>備考</label><textarea id="q_note" rows="3" placeholder="備考を入力"></textarea></div>
+    </div>
+    <div class="card" style="text-align:center;background:var(--purple-light);border-color:var(--purple)">
+      <div style="font-size:.9rem;color:var(--purple);font-weight:600" id="q_ver_info">新規作成 → 第1版として発行されます</div>
+    </div>
+    <button class="btn-submit" id="btn_quote_submit" onclick="submitQuote()">見積書を発行</button>
+    <div class="field-hint" style="text-align:center;margin-top:8px">※PDF生成・メール送信・LINE WORKS通知が実行されます</div>
+  </div>
+
+  <!-- 完了画面 -->
+  <div id="done_view" class="hidden">
+    <div class="complete-msg"><h2 id="done_title">✅ 見積書を発行しました</h2><div id="done_detail" style="font-size:.95rem;color:var(--text-sub);margin-top:8px"></div></div>
+    <div class="complete-links" id="done_links"></div>
+  </div>
+</div>
+
+<script>
+const GAS_API_URL='https://script.google.com/macros/s/AKfycbwGxE0VcPv6SAL14PGpm0_a_TTIrudeuq8NE27LVQmdYMA_zIaGG1lcNg0u-y6FsfK77A/exec';
+const BASE_URL='https://nihonrinobe-create.github.io/';
+const TAX_RATE=0.10;
+const REPAIR_MENU=[
+  {name:'冷媒ガス注入（500gまで）',price:27000},{name:'冷媒ガス追加（100g）',price:3000},
+  {name:'真空引き',price:16000},{name:'フレア加工・バルブコア交換',price:16000},
+  {name:'水漏れ修復',price:26000},{name:'四方弁動作不良解消',price:24000},
+  {name:'電源部再接続',price:24000},{name:'エアコン標準取付',price:26000},
+  {name:'エアコン取り外し',price:8000},{name:'穴開け工事',price:24000},
+];
+let Q={case_id:'',name:'',email:'',tel:'',address:'',equipment:'',staff_id:'',prefix:'',estimate_versions:0,diag_estimate_versions:0,versions:[]};
+let qCoupons=[],qCouponDiscount=0;
+const params=new URLSearchParams(location.search);
+const paramCaseId=params.get('c')||params.get('case_id')||'';
+const paramReportId=params.get('report_id')||'';
+
+(async function(){
+  if(paramCaseId){document.getElementById('h_case_id').textContent=paramCaseId+'（読込中...）';await loadData(paramCaseId);}
+  else{document.getElementById('lookup_view').classList.remove('hidden');}
+})();
+
+function lkPrefixChange(){var s=document.getElementById('lk_prefix').value;document.getElementById('lk_alpha').style.display=s==='YA'?'':'none';if(s!=='YA')document.getElementById('lk_alpha').value='';}
+function buildLkId(){var p=document.getElementById('lk_prefix').value,a=document.getElementById('lk_alpha').value,n=document.getElementById('lk_number').value.trim();if(!n)return'';if(p==='YA')return a?'YA-'+a+n:'YA-'+n;return p+'-'+n;}
+async function doLookup(){var c=buildLkId();if(!c){showLkErr('番号を入力してください');return;}showLkErr('読み込み中...');document.getElementById('lk_guide').classList.add('hidden');await loadData(c);}
+function showLkErr(m){document.getElementById('lk_error').innerHTML='<div class="error-msg">'+m+'</div>';}
+
+async function loadData(caseId){
+  try{
+    var resp=await fetch(GAS_API_URL,{method:'POST',body:JSON.stringify({form_type:'quote_lookup',case_id:caseId,report_id:paramReportId})});
+    var r=await resp.json();
+    if(!r.ok){
+      if(document.getElementById('lookup_view').classList.contains('hidden'))document.getElementById('lookup_view').classList.remove('hidden');
+      showLkErr('この案件番号は登録されていません。<br>注文フォーム または 業務報告フォーム から先に登録してください。');
+      var g=document.getElementById('lk_guide');g.classList.remove('hidden');
+      document.getElementById('lk_link_order').href=BASE_URL+'index.html?c='+encodeURIComponent(caseId);
+      document.getElementById('lk_link_report').href=BASE_URL+'estimate.html?c='+encodeURIComponent(caseId);
+      document.getElementById('h_case_id').textContent=caseId;return;
+    }
+    Q.case_id=r.case_id;Q.name=r.name||'';Q.email=r.email||'';Q.tel=r.tel||'';Q.address=r.address||'';
+    Q.equipment=r.equipment||'';Q.staff_id=r.staff_id||'';Q.prefix=r.prefix||'';
+    Q.estimate_versions=r.estimate_versions||0;Q.diag_estimate_versions=r.diag_estimate_versions||0;Q.versions=r.versions||[];
+    renderMain();
+  }catch(e){showLkErr('通信エラー: '+e.message);}
+}
+
+function renderMain(){
+  document.getElementById('lookup_view').classList.add('hidden');
+  document.getElementById('main_view').classList.remove('hidden');
+  document.getElementById('h_case_id').textContent=Q.case_id;document.getElementById('h_name').textContent=Q.name||'---';
+  document.getElementById('d_case_id').textContent=Q.case_id;document.getElementById('d_name').textContent=Q.name;
+  document.getElementById('d_tel').textContent=Q.tel;document.getElementById('d_address').textContent=Q.address;
+  document.getElementById('d_equipment').textContent=Q.equipment;
+  if(Q.staff_id){var s=String(Q.staff_id);while(s.length<4)s='0'+s;document.getElementById('q_staff_id').value=s;lookupStaff();}
+  document.getElementById('q_email').value=Q.email||'';toggleEmailWarn();
+  var isEC=Q.prefix==='EC',isHC=Q.prefix==='HC';
+  document.getElementById('repair_menu_section').style.display=(isEC||isHC)?'none':'';
+  document.getElementById('add_cond_section').style.display=isHC?'none':'';
+  if(isHC)document.getElementById('opt_diag_type').style.display='none';
+  buildQRepairMenu();buildVerSelect();
+  var d30=new Date();d30.setDate(d30.getDate()+30);document.getElementById('q_expiry').value=d30.toISOString().split('T')[0];
+  if(Q.versions.length>0)onVersionChange();else{updateVerInfo();qRecalc();}
+}
+
+function buildQRepairMenu(){
+  document.getElementById('q_repair_menu').innerHTML=REPAIR_MENU.map(function(item,i){
+    return'<div class="repair-item" id="qr_row_'+i+'" data-price="'+item.price+'"><div><div class="repair-name">'+item.name+'</div><span class="repair-price-tag">¥'+item.price.toLocaleString()+'</span></div><div class="counter"><button class="minus" onclick="qRQ('+i+',-1)">-</button><span class="num" id="qr_qty_'+i+'">0</span><button class="plus" onclick="qRQ('+i+',1)">+</button></div></div>';
+  }).join('');
+}
+function qRQ(i,d){var s=document.getElementById('qr_qty_'+i),n=Math.max(0,parseInt(s.textContent)+d);s.textContent=n;document.getElementById('qr_row_'+i).classList.toggle('active',n>0);qRecalc();}
+
+function buildVerSelect(){
+  var sel=document.getElementById('q_base_ver'),area=document.getElementById('version_select_area');
+  if(Q.versions.length===0){area.classList.add('hidden');return;}
+  area.classList.remove('hidden');
+  var sorted=Q.versions.slice().sort(function(a,b){if(a.doc_type===b.doc_type)return b.ver-a.ver;if(a.doc_type==='見積書')return-1;if(b.doc_type==='見積書')return 1;return 0;});
+  sel.innerHTML='';
+  sorted.forEach(function(v){
+    var isL=(v.doc_type==='見積書'&&v.ver===Q.estimate_versions)||(v.doc_type==='診断見積書'&&v.ver===Q.diag_estimate_versions);
+    var o=document.createElement('option');o.value=Q.versions.indexOf(v);
+    o.textContent=v.doc_type+' 第'+v.ver+'版'+(isL?'（最新）':'')+' - '+v.created;sel.appendChild(o);
+  });
+}
+
+function onVersionChange(){
+  var sel=document.getElementById('q_base_ver');if(!sel.options.length)return;
+  var v=Q.versions[parseInt(sel.value)];if(!v)return;
+  resetInputs();
+  document.querySelector('input[name="q_doc_type"][value="見積書"]').checked=true;
+  if(v.staff_id){var s=String(v.staff_id);while(s.length<4)s='0'+s;document.getElementById('q_staff_id').value=s;lookupStaff();}
+  if(v.expiry)document.getElementById('q_expiry').value=v.expiry;
+  if(v.note)document.getElementById('q_note').value=v.note;
+  qCoupons=[];qCouponDiscount=0;document.getElementById('q_coupon_result').textContent='';
+  if(v.items&&v.items.length>0)restoreItems(v.items);
+  updateVerInfo();qRecalc();
+}
+
+function resetInputs(){
+  REPAIR_MENU.forEach(function(_,i){var s=document.getElementById('qr_qty_'+i);if(s)s.textContent='0';var r=document.getElementById('qr_row_'+i);if(r)r.classList.remove('active');});
+  document.querySelectorAll('#q_add_cond_area .q-cond-price').forEach(function(inp){inp.value='';});
+  var ca=document.getElementById('q_custom_area');
+  ca.innerHTML='<div class="q-custom-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap"><input type="text" class="q-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="qRecalc()"><input type="number" class="q-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="qRecalc()"><div style="display:flex;align-items:center;gap:4px;flex-shrink:0"><button type="button" onclick="qCustomQty(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button><span class="q-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span><button type="button" onclick="qCustomQty(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button></div></div>';
+  document.getElementById('q_note').value='';
+}
+
+function restoreItems(items){
+  items.forEach(function(item){
+    var rmIdx=REPAIR_MENU.findIndex(function(m){return m.name===item.name||m.name.indexOf(item.name)>-1||item.name.indexOf(m.name)>-1;});
+    if(rmIdx>=0){var sp=document.getElementById('qr_qty_'+rmIdx);if(sp){sp.textContent=item.qty||1;document.getElementById('qr_row_'+rmIdx).classList.toggle('active',(item.qty||1)>0);}return;}
+    var fc=false;document.querySelectorAll('#q_add_cond_area .q-cond-row').forEach(function(row){if(row.dataset.condName===item.name&&item.price>0){row.querySelector('.q-cond-price').value=item.price;fc=true;}});
+    if(fc)return;
+    if(item.name&&item.name.indexOf('クーポン割引')===0){var m=item.name.match(/（(.+)）/);qCoupons.push({code:m?m[1]:'クーポン',discount:Math.abs(item.price)});qCouponDiscount=qCoupons.reduce(function(s,c){return s+c.discount;},0);var res=document.getElementById('q_coupon_result');res.textContent='クーポン適用済：'+qCoupons.map(function(c){return c.code;}).join('・');res.style.color='green';return;}
+    var area=document.getElementById('q_custom_area'),tr=null;
+    area.querySelectorAll('.q-custom-row').forEach(function(row){if(!tr&&!row.querySelector('.q-custom-name').value.trim())tr=row;});
+    if(!tr){addQCustom();var rs=area.querySelectorAll('.q-custom-row');tr=rs[rs.length-1];}
+    if(tr){tr.querySelector('.q-custom-name').value=item.name;tr.querySelector('.q-custom-price').value=Math.abs(item.price);tr.querySelector('.q-custom-qty').textContent=item.qty||1;}
+  });
+}
+
+function updateVerInfo(){
+  var dt=(document.querySelector('input[name="q_doc_type"]:checked')||{}).value||'見積書';
+  var c=dt==='見積書'?Q.estimate_versions:Q.diag_estimate_versions,nx=c+1;
+  document.getElementById('q_ver_info').textContent=c===0?dt+' 新規作成 → 第1版として発行されます':dt+' 現在: 第'+c+'版 → 発行すると第'+nx+'版になります';
+}
+
+function addQCustom(){
+  var area=document.getElementById('q_custom_area'),div=document.createElement('div');div.className='q-custom-row';
+  div.style.cssText='display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
+  div.innerHTML='<input type="text" class="q-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="qRecalc()"><input type="number" class="q-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="qRecalc()"><div style="display:flex;align-items:center;gap:4px;flex-shrink:0"><button type="button" onclick="qCustomQty(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button><span class="q-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span><button type="button" onclick="qCustomQty(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button></div><button type="button" onclick="this.closest(\'.q-custom-row\').remove();qRecalc()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">×</button>';
+  area.appendChild(div);
+}
+function qCustomQty(btn,d){var s=btn.parentElement.querySelector('.q-custom-qty');s.textContent=Math.max(1,parseInt(s.textContent)+d);qRecalc();}
+function getQCustomItems(){var items=[];document.querySelectorAll('#q_custom_area .q-custom-row').forEach(function(row){var n=row.querySelector('.q-custom-name').value.trim(),p=parseInt(row.querySelector('.q-custom-price').value)||0,q=parseInt(row.querySelector('.q-custom-qty').textContent)||1;if(n&&p>0)items.push({name:n,price:p,qty:q,subtotal:p*q});});return items;}
+
+async function applyQCoupon(){
+  var code=document.getElementById('q_coupon_code').value.trim(),res=document.getElementById('q_coupon_result');
+  if(!code){res.textContent='コードを入力してください';res.style.color='var(--red)';return;}
+  res.textContent='確認中...';res.style.color='#999';
+  try{var r=await fetch(GAS_API_URL,{method:'POST',body:JSON.stringify({form_type:'coupon_lookup',code:code})});var data=await r.json();
+    if(data.ok){var disc=Number(data.discount)||0,ei=qCoupons.findIndex(function(c){return c.code===code;});
+      if(ei>=0)qCoupons[ei].discount=disc;else qCoupons.push({code:code,discount:disc});
+      qCouponDiscount=qCoupons.reduce(function(s,c){return s+c.discount;},0);
+      res.textContent='クーポン適用：'+qCoupons.map(function(c){return c.code+'(-¥'+c.discount.toLocaleString()+')';}).join('・');res.style.color='green';
+    }else{res.textContent=data.error||'無効';res.style.color='var(--red)';}
+  }catch(e){res.textContent='通信エラー';res.style.color='var(--red)';}qRecalc();
+}
+
+function qRecalc(){
+  var sub=0,rv=document.getElementById('repair_menu_section').style.display!=='none',cv=document.getElementById('add_cond_section').style.display!=='none';
+  if(rv)REPAIR_MENU.forEach(function(item,i){var e=document.getElementById('qr_qty_'+i);if(e)sub+=item.price*(parseInt(e.textContent)||0);});
+  if(cv)document.querySelectorAll('#q_add_cond_area .q-cond-price').forEach(function(inp){sub+=parseInt(inp.value)||0;});
+  getQCustomItems().forEach(function(it){sub+=it.subtotal;});
+  sub=Math.max(0,sub-qCouponDiscount);var tax=Math.round(sub*TAX_RATE),total=sub+tax;
+  document.getElementById('q_subtotal_ex').textContent='¥'+sub.toLocaleString();
+  document.getElementById('q_tax_amount').textContent='¥'+tax.toLocaleString();
+  document.getElementById('q_total').textContent='¥'+total.toLocaleString();
+  var bk=document.getElementById('q_breakdown_area'),rs='display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:.85rem;color:#5c2d91;',h='';
+  if(rv)REPAIR_MENU.forEach(function(item,i){var q=parseInt(document.getElementById('qr_qty_'+i).textContent)||0;if(q>0)h+='<div style="'+rs+'"><span>'+item.name+(q>1?' ×'+q:'')+'</span><span>¥'+(item.price*q).toLocaleString()+'</span></div>';});
+  if(cv)document.querySelectorAll('#q_add_cond_area .q-cond-row').forEach(function(row){var p=parseInt(row.querySelector('.q-cond-price').value)||0;if(p>0)h+='<div style="'+rs+'"><span>'+row.dataset.condName+'</span><span>¥'+p.toLocaleString()+'</span></div>';});
+  getQCustomItems().forEach(function(it){h+='<div style="'+rs+'"><span>'+it.name+(it.qty>1?' ×'+it.qty:'')+'</span><span>¥'+it.subtotal.toLocaleString()+'</span></div>';});
+  qCoupons.forEach(function(cp){h+='<div style="'+rs+';color:#e65100"><span>クーポン（'+cp.code+'）</span><span>-¥'+cp.discount.toLocaleString()+'</span></div>';});
+  bk.innerHTML=h;
+}
+
+function toggleEmailWarn(){document.getElementById('q_email_warn').classList.toggle('hidden',document.getElementById('q_email').value.trim().length>0);}
+async function lookupStaff(){
+  var sid=document.getElementById('q_staff_id').value.trim(),disp=document.getElementById('q_staff_name');
+  if(!sid){disp.textContent='';return;}var p=sid;while(p.length<4)p='0'+p;
+  disp.textContent='検索中...';disp.style.color='#999';
+  try{var r=await fetch(GAS_API_URL,{method:'POST',body:JSON.stringify({form_type:'staff_lookup',staff_id:p})});var d=await r.json();
+    if(d.ok){disp.textContent='担当：'+d.staff_name;disp.style.color='#2e7d32';}else{disp.textContent='※該当なし';disp.style.color='#c62828';}
+  }catch(e){disp.textContent='※通信エラー';disp.style.color='#c62828';}
+}
+
+async function submitQuote(){
+  var staffId=document.getElementById('q_staff_id').value.trim();
+  if(!staffId){alert('担当者番号を入力してください');return;}while(staffId.length<4)staffId='0'+staffId;
+  var email=document.getElementById('q_email').value.trim();
+  var docType=(document.querySelector('input[name="q_doc_type"]:checked')||{}).value||'見積書';
+  if(!email&&!confirm('メールアドレスが空です。メール送信なし（PDF保存のみ）で発行しますか？'))return;
+  var items=[];
+  if(document.getElementById('repair_menu_section').style.display!=='none')
+    REPAIR_MENU.forEach(function(item,i){var q=parseInt(document.getElementById('qr_qty_'+i).textContent)||0;if(q>0)items.push({name:item.name,price:item.price,qty:q,subtotal:item.price*q});});
+  if(document.getElementById('add_cond_section').style.display!=='none')
+    document.querySelectorAll('#q_add_cond_area .q-cond-row').forEach(function(row){var p=parseInt(row.querySelector('.q-cond-price').value)||0;if(p>0)items.push({name:row.dataset.condName,price:p,qty:1,subtotal:p});});
+  getQCustomItems().forEach(function(it){items.push(it);});
+  qCoupons.forEach(function(cp){items.push({name:'クーポン割引（'+cp.code+'）',price:-cp.discount,qty:1,subtotal:-cp.discount});});
+  if(items.filter(function(it){return!it.name.startsWith('クーポン');}).length===0){alert('見積り項目を1つ以上入力してください');return;}
+  var btn=document.getElementById('btn_quote_submit');btn.disabled=true;btn.textContent='発行中...';
+  try{
+    var resp=await fetch(GAS_API_URL,{method:'POST',body:JSON.stringify({
+      form_type:'quote',doc_type:docType,case_id:Q.case_id,name:Q.name,email:email,tel:Q.tel,
+      address:Q.address,equipment:Q.equipment,staff_id:staffId,items:items,
+      expiry:document.getElementById('q_expiry').value,note:document.getElementById('q_note').value,
+      coupon_codes:qCoupons.map(function(c){return c.code;}).join(',')
+    })});
+    var r=await resp.json();
+    if(!r.ok){btn.disabled=false;btn.textContent='見積書を発行';alert('エラー: '+(r.error||'発行失敗'));return;}
+    document.getElementById('main_view').classList.add('hidden');document.getElementById('done_view').classList.remove('hidden');
+    var vs=r.doc_type+' 第'+r.version+'版';
+    document.getElementById('done_title').textContent='✅ '+vs+'を発行しました';
+    document.getElementById('done_detail').innerHTML='案件番号: '+Q.case_id+'<br>お客様: '+Q.name;
+    var lh='';
+    var invUrl=BASE_URL+'estimate.html?c='+encodeURIComponent(Q.case_id)+'&mode=invoice&quote_ver='+r.version+'&quote_type='+encodeURIComponent(r.doc_type);
+    lh+='<a class="link-invoice" href="'+invUrl+'">📑 この見積書の請求書を発行する</a>';
+    lh+='<a class="link-edit" href="'+BASE_URL+'quote.html?c='+encodeURIComponent(Q.case_id)+'">📄 見積書を再編集する</a>';
+    document.getElementById('done_links').innerHTML=lh;
+  }catch(e){btn.disabled=false;btn.textContent='見積書を発行';alert('通信エラー: '+e.message);}
+}
+</script>
+</body>
+</html>
