@@ -344,8 +344,13 @@ async function applyQCoupon(){
   }catch(e){res.textContent='通信エラー';res.style.color='var(--red)';}qRecalc();
 }
 
+function getDiagFee_(){if(!Q.equipment)return 9000;if(Q.equipment.indexOf('業務用')>-1)return 15000;return 9000;}
 function qRecalc(){
   var sub=0,rv=document.getElementById('repair_menu_section').style.display!=='none',cv=document.getElementById('add_cond_section').style.display!=='none';
+  var isDiagEst=(document.querySelector('input[name="q_doc_type"]:checked')||{}).value==='診断見積書';
+  // 診断見積書のときは診断費を自動加算
+  var diagFee=0;
+  if(isDiagEst){diagFee=getDiagFee_();sub+=diagFee;}
   if(rv)REPAIR_MENU.forEach(function(item,i){var e=document.getElementById('qr_qty_'+i);if(e)sub+=item.price*(parseInt(e.textContent)||0);});
   if(cv)document.querySelectorAll('#q_add_cond_area .q-cond-price').forEach(function(inp){sub+=parseInt(inp.value)||0;});
   getQCustomItems().forEach(function(it){sub+=it.subtotal;});
@@ -354,6 +359,8 @@ function qRecalc(){
   document.getElementById('q_tax_amount').textContent='¥'+tax.toLocaleString();
   document.getElementById('q_total').textContent='¥'+total.toLocaleString();
   var bk=document.getElementById('q_breakdown_area'),rs='display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:.85rem;color:#5c2d91;',h='';
+  // 診断費の内訳行
+  if(isDiagEst&&diagFee>0){h+='<div style="'+rs+'"><span>故障診断（'+(Q.equipment||'')+'）</span><span>¥'+diagFee.toLocaleString()+'</span></div>';}
   if(rv)REPAIR_MENU.forEach(function(item,i){var q=parseInt(document.getElementById('qr_qty_'+i).textContent)||0;if(q>0)h+='<div style="'+rs+'"><span>'+item.name+(q>1?' ×'+q:'')+'</span><span>¥'+(item.price*q).toLocaleString()+'</span></div>';});
   if(cv)document.querySelectorAll('#q_add_cond_area .q-cond-row').forEach(function(row){var p=parseInt(row.querySelector('.q-cond-price').value)||0;if(p>0)h+='<div style="'+rs+'"><span>'+row.dataset.condName+'</span><span>¥'+p.toLocaleString()+'</span></div>';});
   getQCustomItems().forEach(function(it){h+='<div style="'+rs+'"><span>'+it.name+(it.qty>1?' ×'+it.qty:'')+'</span><span>¥'+it.subtotal.toLocaleString()+'</span></div>';});
@@ -378,6 +385,8 @@ async function submitQuote(){
   var docType=(document.querySelector('input[name="q_doc_type"]:checked')||{}).value||'見積書';
   if(!email&&!confirm('メールアドレスが空です。メール送信なし（PDF保存のみ）で発行しますか？'))return;
   var items=[];
+  // 診断見積書のときは診断費を先頭に追加
+  if(docType==='診断見積書'){var df=getDiagFee_();items.push({name:'故障診断（'+(Q.equipment||'')+'）',price:df,qty:1,subtotal:df});}
   if(document.getElementById('repair_menu_section').style.display!=='none')
     REPAIR_MENU.forEach(function(item,i){var q=parseInt(document.getElementById('qr_qty_'+i).textContent)||0;if(q>0)items.push({name:item.name,price:item.price,qty:q,subtotal:item.price*q});});
   if(document.getElementById('add_cond_section').style.display!=='none')
