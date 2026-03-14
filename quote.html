@@ -331,16 +331,19 @@ function addQCustom(){
 function qCustomQty(btn,d){var s=btn.parentElement.querySelector('.q-custom-qty');s.textContent=Math.max(1,parseInt(s.textContent)+d);qRecalc();}
 function getQCustomItems(){var items=[];document.querySelectorAll('#q_custom_area .q-custom-row').forEach(function(row){var n=row.querySelector('.q-custom-name').value.trim(),p=parseInt(row.querySelector('.q-custom-price').value)||0,q=parseInt(row.querySelector('.q-custom-qty').textContent)||1;if(n&&p>0)items.push({name:n,price:p,qty:q,subtotal:p*q});});return items;}
 
-// === クーポン表示ヘルパー（×ボタン付き） ===
+// === クーポン表示ヘルパー（×ボタン付き＋合計表示） ===
 function renderQCouponTags(){
   var el=document.getElementById('q_coupon_result');
   if(!qCoupons||qCoupons.length===0){el.innerHTML='';return;}
-  el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">'+qCoupons.map(function(c,i){
+  var totalEx=qCoupons.reduce(function(s,c){return s+c.discount;},0);
+  var totalInc=Math.round(totalEx*(1+TAX_RATE));
+  var html='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">'+qCoupons.map(function(c,i){
     return '<span style="display:inline-flex;align-items:center;gap:4px;background:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:5px 10px;font-size:.85rem;font-weight:600">'
       +c.code+' (-¥'+c.discount.toLocaleString()+')'
       +'<button type="button" onclick="removeQCoupon('+i+')" style="background:none;border:none;color:#c62828;font-weight:700;cursor:pointer;font-size:1.1rem;padding:0 2px;line-height:1">×</button></span>';
   }).join('')+'</div>';
-  el.style.color='green';
+  html+='<div style="font-size:.82rem;color:#2e7d32;margin-top:4px">合計 -¥'+totalEx.toLocaleString()+'（税抜）/ -¥'+totalInc.toLocaleString()+'（税込）</div>';
+  el.innerHTML=html;
 }
 function removeQCoupon(idx){
   qCoupons.splice(idx,1);
