@@ -419,10 +419,12 @@ function onIndexPrefixChange() {
   }
   const orderTypeGrid  = document.getElementById('order_type_grid');
   const orderTypeFixed = document.getElementById('order_type_fixed');
-  if (prefix === 'HC') {
-    orderTypeGrid.style.display  = 'none'; orderTypeFixed.style.display = 'block';
+ if (prefix === 'HC') {
+    orderTypeGrid.style.display  = 'none';
+    orderTypeFixed.style.display = 'block';
     document.getElementById('investigation_options_area').style.display = 'none';
     document.getElementById('repair_options_area').style.display = 'none';
+    if (diagNotice) diagNotice.style.display = 'none';
   } else if (prefix === 'EC') {
     orderTypeGrid.style.display  = ''; orderTypeFixed.style.display = 'none';
     document.getElementById('investigation_options_area').style.display = 'block';
