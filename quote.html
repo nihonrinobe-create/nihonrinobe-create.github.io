@@ -240,7 +240,7 @@ function renderMain(){
   var isEC=Q.prefix==='EC',isHC=Q.prefix==='HC';
   document.getElementById('repair_menu_section').style.display=(isEC||isHC)?'none':'';
   document.getElementById('add_cond_section').style.display=isHC?'none':'';
-  if(isHC){document.getElementById('opt_diag_type').style.display='none';var _repLabel=document.querySelector('#opt_repair_type');if(_repLabel)_repLabel.innerHTML='🧹 清掃作業見積書';}
+  if(isHC){document.getElementById('opt_diag_type').style.display='none';var _rl=document.querySelector('input[name="q_doc_type"][value="見積書"]');if(_rl&&_rl.nextSibling)_rl.nextSibling.textContent='🧹 清掃作業見積書';}
   buildQRepairMenu();buildVerSelect();
   var d30=new Date();d30.setDate(d30.getDate()+30);document.getElementById('q_expiry').value=d30.toISOString().split('T')[0];
   if(Q.versions.length>0)onVersionChange();else{onDocTypeChange();}
