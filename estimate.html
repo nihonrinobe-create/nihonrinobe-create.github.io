@@ -535,18 +535,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <!-- 追加項目はJS動的挿入 -->
           <div id="diag_est_extra_rows"></div>
         </div>
-        <div style="margin-top:10px;border-top:2px solid var(--border);padding-top:8px">
-          <div style="display:flex;justify-content:space-between;font-size:.9rem;color:var(--text-sub)">
-            <span>合計（税抜）</span><span id="diag_est_subtotal_ex">¥9,000</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:.9rem;color:var(--text-sub)">
-            <span>消費税（10%）</span><span id="diag_est_tax">¥900</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:700;margin-top:4px">
-            <span>合計（税込）</span><span id="diag_est_total_display" style="color:var(--blue)">¥9,900</span>
-          </div>
         </div>
-      </div>
 
       <!-- 診断見積：追加条件・追加項目・クーポン（オレンジ枠） -->
       <div style="border:2px solid var(--orange);border-radius:12px;padding:14px;background:#fffaf5;margin-top:12px">
@@ -604,6 +593,17 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <div id="diag_coupon_result" style="font-size:.85rem;margin-top:5px;font-weight:bold"></div>
         </div>
 
+        <div class="estimate-total-box" style="margin-top:12px">
+          <div id="diag_est_breakdown_area" style="margin-bottom:8px"></div>
+          <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;margin-bottom:4px">
+            <span>合計（税抜）</span><span id="diag_est_subtotal_ex">¥0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
+            <span>消費税（10%）</span><span id="diag_est_tax">¥0</span>
+          </div>
+          <div class="estimate-total-label">診断見積り合計（税込）</div>
+          <div class="estimate-total-amount" id="diag_est_total_display">¥0</div>
+        </div>
       </div>
     </div>
 
