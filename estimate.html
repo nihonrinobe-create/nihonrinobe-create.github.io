@@ -2396,7 +2396,9 @@ var linkQuote = document.getElementById('link_quote_edit');
 if (linkQuote && P.case_id) {
   linkQuote.href = 'https://nihonrinobe-create.github.io/quote.html?c=' + encodeURIComponent(P.case_id);
 }
-
+  
+  window._estVer = gasResult.est_ver || '';
+  window._estDocType = gasResult.est_doc_type || '';
   window._submittedPayload = payload;
 }
 
@@ -2476,8 +2478,8 @@ let docItems = [];
     transfer_name: (type === 'invoice' && document.getElementById('inv_transfer_name'))
       ? document.getElementById('inv_transfer_name').value.trim()
       : (sp.transfer_name || P.transfer_name || ''),
-    quote_ver: params.get('quote_ver') || '',
-    quote_type: params.get('quote_type') || '',
+    quote_ver: params.get('quote_ver') || window._estVer || '',
+    quote_type: params.get('quote_type') || window._estDocType || '',
   };
   
   try {
