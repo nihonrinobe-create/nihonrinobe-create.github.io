@@ -424,8 +424,9 @@ function onIndexPrefixChange() {
     orderTypeFixed.style.display = 'block';
     document.getElementById('investigation_options_area').style.display = 'none';
     document.getElementById('repair_options_area').style.display = 'none';
-    if (diagNotice) diagNotice.style.display = 'none';
-  } else if (prefix === 'EC') {
+    var _diagN = document.getElementById('diag_fee_notice');
+    if (_diagN) _diagN.style.display = 'none';
+  }else if (prefix === 'EC') {
     orderTypeGrid.style.display  = ''; orderTypeFixed.style.display = 'none';
     document.getElementById('investigation_options_area').style.display = 'block';
     document.getElementById('repair_options_area').style.display = 'none';
