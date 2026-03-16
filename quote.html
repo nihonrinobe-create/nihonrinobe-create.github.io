@@ -89,7 +89,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div class="info-row"><span class="info-label">お客様名</span><span class="info-val" id="d_name"></span></div>
       <div class="info-row"><span class="info-label">電話番号</span><span class="info-val" id="d_tel"></span></div>
       <div class="info-row"><span class="info-label">住所</span><span class="info-val" id="d_address"></span></div>
-      <div class="info-row"><span class="info-label">作業対象</span><select id="d_equipment" onchange="onQuoteEquipChange()" style="font-weight:600;text-align:right;padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:.9rem;background:#fff;max-width:60%"><option value="ルームエアコン">ルームエアコン</option><option value="業務用エアコン">業務用エアコン</option><option value="エコキュート">エコキュート</option><option value="その他">その他</option></select></div>
+      <div class="info-row"><span class="info-label">作業対象</span><select id="d_equipment" onchange="onQuoteEquipChange()" style="font-weight:600;text-align:right;padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:.9rem;background:#fff;max-width:60%"><option value="ルームエアコン">ルームエアコン</option><option value="業務用エアコン">業務用エアコン</option><option value="その他">その他</option></select></div>
     </div>
     <div class="card">
       <div class="card-title">👤 担当者</div>
@@ -235,7 +235,7 @@ function renderMain(){
   document.getElementById('d_case_id').textContent=Q.case_id;document.getElementById('d_name').textContent=Q.name;
   document.getElementById('d_tel').textContent=Q.tel;document.getElementById('d_address').textContent=Q.address;
   var eqSel=document.getElementById('d_equipment');
-  var eqOpts={YA:[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン']],HM:[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン']],CP:[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン']],EC:[['エコキュート','エコキュート'],['その他','その他']],HC:[['ハウスクリーニング','ハウスクリーニング']]};
+  var eqOpts={YA:[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン'],['その他','その他']],HM:[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン'],['その他','その他']],CP:[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン'],['その他','その他']],EC:[['エコキュート','エコキュート'],['ガス給湯器','ガス給湯器'],['その他','その他']],HC:[['ハウスクリーニング','ハウスクリーニング'],['その他','その他']]};
   var opts=eqOpts[Q.prefix]||[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン'],['エコキュート','エコキュート'],['その他','その他']];
   eqSel.innerHTML=opts.map(function(o){return'<option value="'+o[0]+'">'+o[1]+'</option>';}).join('');
   eqSel.value=Q.equipment;if(!eqSel.value&&opts.length>0)eqSel.value=opts[0][0];
