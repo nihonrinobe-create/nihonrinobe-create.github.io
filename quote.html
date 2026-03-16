@@ -89,7 +89,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div class="info-row"><span class="info-label">お客様名</span><span class="info-val" id="d_name"></span></div>
       <div class="info-row"><span class="info-label">電話番号</span><span class="info-val" id="d_tel"></span></div>
       <div class="info-row"><span class="info-label">住所</span><span class="info-val" id="d_address"></span></div>
-      <div class="info-row"><span class="info-label">作業対象</span><span class="info-val" id="d_equipment"></span></div>
+      <div class="info-row"><span class="info-label">作業対象</span><select id="d_equipment" onchange="onQuoteEquipChange()" style="font-weight:600;text-align:right;padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:.9rem;background:#fff;max-width:60%"><option value="ルームエアコン">ルームエアコン</option><option value="業務用エアコン">業務用エアコン</option><option value="エコキュート">エコキュート</option><option value="その他">その他</option></select></div>
     </div>
     <div class="card">
       <div class="card-title">👤 担当者</div>
@@ -122,7 +122,6 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <div style="font-size:.82rem;color:var(--text-sub);margin-bottom:10px">該当する項目に金額を入力してください</div>
         <div id="q_add_cond_area">
           <div class="q-cond-row" data-cond-name="高所危険作業" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px"><span style="font-size:.9rem;font-weight:600;flex:1">高所危険作業</span><input type="number" class="q-cond-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="qRecalc()"></div>
-          <div class="q-cond-row" data-cond-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px"><span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span><input type="number" class="q-cond-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="qRecalc()"></div>
           <div class="q-cond-row" data-cond-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px"><span style="font-size:.9rem;font-weight:600;flex:1">室外機特殊設置</span><input type="number" class="q-cond-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="qRecalc()"></div>
           <div class="q-cond-row" data-cond-name="電気系統調査" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px"><span style="font-size:.9rem;font-weight:600;flex:1">電気系統調査</span><input type="number" class="q-cond-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="qRecalc()"></div>
         </div>
@@ -235,7 +234,7 @@ function renderMain(){
   document.getElementById('h_case_id').textContent=Q.case_id;document.getElementById('h_name').textContent=Q.name||'---';
   document.getElementById('d_case_id').textContent=Q.case_id;document.getElementById('d_name').textContent=Q.name;
   document.getElementById('d_tel').textContent=Q.tel;document.getElementById('d_address').textContent=Q.address;
-  document.getElementById('d_equipment').textContent=Q.equipment;
+  document.getElementById('d_equipment').value=Q.equipment;
   if(Q.staff_id){var s=String(Q.staff_id);while(s.length<4)s='0'+s;document.getElementById('q_staff_id').value=s;lookupStaff();}
   document.getElementById('q_email').value=Q.email||'';toggleEmailWarn();
   var isEC=Q.prefix==='EC',isHC=Q.prefix==='HC';
@@ -365,6 +364,7 @@ async function applyQCoupon(){
   }catch(e){res.textContent='通信エラー';res.style.color='var(--red)';}qRecalc();
 }
 
+function onQuoteEquipChange(){Q.equipment=document.getElementById('d_equipment').value;qRecalc();}
 function getDiagFee_(){if(!Q.equipment)return 9000;if(Q.equipment.indexOf('業務用')>-1)return 15000;return 9000;}
 function qRecalc(){
   var sub=0,rv=document.getElementById('repair_menu_section').style.display!=='none',cv=document.getElementById('add_cond_section').style.display!=='none';
