@@ -439,6 +439,16 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
             </div>
             <div id="est_chk_diag_fee_info" style="display:none;margin-top:8px;font-size:.85rem;color:var(--orange);font-weight:600"></div>
           </div>
+          <!-- 見積用の作業対象 -->
+          <div class="card" style="margin-bottom:12px">
+            <div style="font-weight:700;font-size:.95rem;margin-bottom:8px;color:var(--blue)">🔧 見積書の作業対象</div>
+            <select id="est_chk_equipment" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:1rem" onchange="onEstChkEquipChange()">
+              <option value="ルームエアコン">ルームエアコン</option>
+              <option value="業務用エアコン">業務用エアコン</option>
+              <option value="その他">その他</option>
+            </select>
+            <div style="font-size:.75rem;color:var(--text-sub);margin-top:4px">※完工分と異なる機器の見積書を作成する場合に変更してください</div>
+          </div>
           <!-- オレンジ枠：後日見積全体 -->
           <div style="border:2px solid var(--orange);border-radius:12px;padding:14px;margin-top:10px;background:#fffaf5">
             <div class="field">
@@ -867,6 +877,24 @@ function updateEquipOptions(prefix, currentVal) {
   if (prev && !opts.includes(prev)) sel.value = '';
 }
 
+function updateEstChkEquipOptions(prefix, currentVal) {
+  var sel = document.getElementById('est_chk_equipment');
+  if (!sel) return;
+  var opts = [];
+  if (prefix === 'EC') { opts = ['エコキュート', 'ガス給湯器', 'その他']; }
+  else if (prefix === 'HC') { opts = ['ハウスクリーニング', 'その他']; }
+  else { opts = ['ルームエアコン', '業務用エアコン', 'その他']; }
+  var prev = currentVal || sel.value || (document.getElementById('manual_equipment') ? document.getElementById('manual_equipment').value : '') || P.equipment;
+  sel.innerHTML = '';
+  opts.forEach(function(o) {
+    var el = document.createElement('option');
+    el.value = o; el.textContent = o;
+    if (o === prev) el.selected = true;
+    sel.appendChild(el);
+  });
+  if (prev && !opts.includes(prev)) sel.value = opts[0] || '';
+}
+
 function onEstEquipChange() {
   const equip = document.getElementById('manual_equipment').value;
   P.equipment = equip;
@@ -875,7 +903,9 @@ function onEstEquipChange() {
   if (!workType || workType.value !== '修理') {
     P.initial_fee = getDiagFee(equip);
   }
-
+  // 種別選択の情報テキストも更新
+  onResEstTypeChange();
+  onEstChkTypeChange();
   recalc();
 }
 
@@ -911,6 +941,7 @@ function initUI() {
   // 対象機器の選択肢をprefixで絞り込む＆セクション表示制御
   const casePrefix = (P.case_id || '').split('-')[0].toUpperCase();
   updateEquipOptions(casePrefix, P.equipment);
+  updateEstChkEquipOptions(casePrefix, P.equipment);
   applyPrefixUI(casePrefix);
 
   // ★ パラメータあり修理案件: P.is_repair=true なら today_repairs_section を表示
@@ -1001,6 +1032,7 @@ function onPrefixChange() {
   }
 
   updateEquipOptions(prefix);
+  updateEstChkEquipOptions(prefix);
   applyPrefixUI(prefix);
 }
 
@@ -1637,7 +1669,7 @@ function recalc() {
     // 診断見積書の場合、診断費を自動加算
     var _estChkDocType = (document.querySelector('input[name="est_chk_doc_type"]:checked') || {}).value || '見積書';
     if (_estChkDocType === '診断見積書') {
-      var _estDiagEquip = document.getElementById('manual_equipment') ? document.getElementById('manual_equipment').value || P.equipment : P.equipment;
+      var _estDiagEquip = document.getElementById('est_chk_equipment') ? document.getElementById('est_chk_equipment').value || P.equipment : P.equipment;
       estTotal += getDiagFee(_estDiagEquip);
     }
     REPAIR_MENU.forEach((item, i) => {
@@ -1673,7 +1705,7 @@ function recalc() {
     let _bHtml = '';
     // 診断見積書の場合、診断費行を先頭に表示
     if (_estChkDocType === '診断見積書') {
-      var _estDiagEquip2 = document.getElementById('manual_equipment') ? document.getElementById('manual_equipment').value || P.equipment : P.equipment;
+      var _estDiagEquip2 = document.getElementById('est_chk_equipment') ? document.getElementById('est_chk_equipment').value || P.equipment : P.equipment;
       var _estDiagFee = getDiagFee(_estDiagEquip2);
       _bHtml += '<div style="' + _rowStyle + ';font-weight:600"><span>故障診断（' + (_estDiagEquip2||'') + '）</span><span>¥' + _estDiagFee.toLocaleString('ja-JP') + '（税抜）</span></div>';
     }
@@ -2040,7 +2072,7 @@ async function submitReport() {
     var _estChkDocTypeSub = (document.querySelector('input[name="est_chk_doc_type"]:checked') || {}).value || '見積書';
     // 診断見積書の場合、診断費を先頭に追加
     if (_estChkDocTypeSub === '診断見積書') {
-      var _eDiagEquip = document.getElementById('manual_equipment') ? document.getElementById('manual_equipment').value || P.equipment : P.equipment;
+      var _eDiagEquip = document.getElementById('est_chk_equipment') ? document.getElementById('est_chk_equipment').value || P.equipment : P.equipment;
       var _eDiagFee = getDiagFee(_eDiagEquip);
       estItems.push({ name: '故障診断（' + (_eDiagEquip||'') + '）', price: _eDiagFee, qty: 1, subtotal: _eDiagFee });
     }
@@ -2350,6 +2382,11 @@ async function lookupStaffName() {
   }
 }
 
+// === 後日見積用の機器変更 ===
+function onEstChkEquipChange() {
+  onEstChkTypeChange(); // 診断費情報を更新
+}
+
 // === 見積種別切替（予約見積あり） ===
 function onResEstTypeChange() {
   var dt = (document.querySelector('input[name="res_est_doc_type"]:checked') || {}).value || '見積書';
@@ -2361,10 +2398,11 @@ function onResEstTypeChange() {
   var info = document.getElementById('res_est_diag_fee_info');
   if (info) {
     if (isDiag) {
-      var eq = document.getElementById('manual_equipment') ? document.getElementById('manual_equipment').value || P.equipment : P.equipment;
+      var eqEl = document.getElementById('manual_equipment');
+      var eq = (eqEl && eqEl.value) ? eqEl.value : P.equipment;
       var fee = getDiagFee(eq);
       info.style.display = '';
-      info.textContent = '故障診断（' + (eq || '') + '）: ¥' + fee.toLocaleString('ja-JP') + '（税抜）が自動加算されます';
+      info.textContent = eq ? '故障診断（' + eq + '）: ¥' + fee.toLocaleString('ja-JP') + '（税抜）が自動加算されます' : '※作業対象を選択すると診断費が自動加算されます';
     } else {
       info.style.display = 'none';
     }
@@ -2390,10 +2428,11 @@ function onEstChkTypeChange() {
   var info = document.getElementById('est_chk_diag_fee_info');
   if (info) {
     if (isDiag) {
-      var eq = document.getElementById('manual_equipment') ? document.getElementById('manual_equipment').value || P.equipment : P.equipment;
+      var eqEl = document.getElementById('est_chk_equipment');
+      var eq = (eqEl && eqEl.value) ? eqEl.value : P.equipment;
       var fee = getDiagFee(eq);
       info.style.display = '';
-      info.textContent = '故障診断（' + (eq || '') + '）: ¥' + fee.toLocaleString('ja-JP') + '（税抜）が自動加算されます';
+      info.textContent = eq ? '故障診断（' + eq + '）: ¥' + fee.toLocaleString('ja-JP') + '（税抜）が自動加算されます' : '※作業対象を選択すると診断費が自動加算されます';
     } else {
       info.style.display = 'none';
     }
