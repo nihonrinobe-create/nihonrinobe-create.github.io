@@ -760,6 +760,7 @@ let resCouponDiscount = 0; // 後日見積用クーポン税抜合計
 let estCoupons = []; // [{code, discount}] 完工チェックボックス後日見積用クーポン配列
 let estCouponDiscount = 0;
 let currentIsHC = false; // applyPrefixUI()で更新、onStatusChange()で参照
+let currentIsEC = false; // applyPrefixUI()で更新、onStatusChange()で参照
 
 // ★ 内訳表示ヘルパー：単価 × 数量 ＝ 小計 形式
 function fmtBreakdownPrice(unitPrice, qty) {
@@ -1082,6 +1083,7 @@ function applyPrefixUI(prefix) {
   const isEC = (prefix === 'EC');
   const isHC = (prefix === 'HC');
   currentIsHC = isHC; // グローバル更新
+  currentIsEC = isEC; // グローバル更新
 
   // EC-/HC-/故障診断: 🔧 今日やった追加作業 を非表示
   const _workType = document.querySelector('input[name="manual_work_type"]:checked');
@@ -1972,10 +1974,12 @@ function onWorkTypeChange() {
   const val = document.querySelector('input[name="manual_work_type"]:checked').value;
   // 切替時は必ず修理メニュー数量をリセット
   resetRepairMenuQty('');
+  const _prefix = (P.case_id || '').split('-')[0].toUpperCase();
+  const _isEC = _prefix === 'EC' || (document.getElementById('case_prefix') && document.getElementById('case_prefix').value === 'EC');
   if (val === '修理') {
     P.is_repair = true;
     P.initial_fee = 0;
-    document.getElementById('today_repairs_section').style.display = '';
+    document.getElementById('today_repairs_section').style.display = _isEC ? 'none' : '';
   } else {
     P.is_repair = false;
     P.initial_fee = getDiagFee(document.getElementById('manual_equipment').value || P.equipment);
@@ -2007,7 +2011,7 @@ function onStatusChange() {
     // 今日やった追加作業：ステータス非対象 or 故障診断モード or HC のとき非表示
     const _workTypeNow = (document.querySelector('input[name="manual_work_type"]:checked') || {}).value;
     const _isWorkTypeDiag = (_workTypeNow !== '修理');
-    document.getElementById('today_repairs_section').style.display = (_isResOrDiag || _isWorkTypeDiag || currentIsHC) ? 'none' : '';
+    document.getElementById('today_repairs_section').style.display = (_isResOrDiag || _isWorkTypeDiag || currentIsHC || currentIsEC) ? 'none' : '';
     document.getElementById('kankou_custom_section').style.display = _isResOrDiag ? 'none' : '';
     document.getElementById('kankou_coupon_section').style.display = _isResOrDiag ? 'none' : '';
     document.getElementById('kankou_total_section').style.display = _isResOrDiag ? 'none' : '';
@@ -2033,7 +2037,7 @@ function onStatusChange() {
     const isECPrefix = casePrefix === 'EC' ||
       (document.getElementById('case_prefix') && document.getElementById('case_prefix').value === 'EC');
     const toggle = document.getElementById('work_type_toggle');
-    if (toggle) toggle.style.display = (isKankou && !isHCPrefix && !isECPrefix) ? 'block' : 'none';
+    if (toggle) toggle.style.display = (isKankou && !isHCPrefix) ? 'block' : 'none';
 
     document.getElementById('notice_loss').classList.toggle('hidden', !isLoss);
     document.getElementById('notice_cancel').classList.toggle('hidden', !isCancel);
