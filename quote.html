@@ -64,7 +64,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <select id="lk_prefix" onchange="lkPrefixChange()" style="padding:10px 8px;border:2px solid var(--border);border-radius:8px;font-size:1rem;font-weight:700;color:var(--blue);background:#fff;min-width:70px">
           <option value="YA">YA</option><option value="HM">HM</option><option value="CP">CP</option><option value="EC">EC</option><option value="HC">HC</option>
         </select>
-        <select id="lk_alpha" style="padding:10px 8px;border:2px solid var(--blue);border-radius:8px;font-size:1rem;font-weight:700;color:var(--blue);background:#e8f2fc;min-width:58px;display:none">
+        <select id="lk_alpha" style="padding:10px 8px;border:2px solid var(--blue);border-radius:8px;font-size:1rem;font-weight:700;color:var(--blue);background:#e8f2fc;min-width:58px">
           <option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option><option>I</option><option>J</option><option>K</option><option>L</option><option>M</option><option>N</option><option>O</option><option>P</option><option>Q</option><option>R</option><option>S</option><option>T</option><option>U</option><option>V</option><option>W</option><option>X</option><option>Y</option><option>Z</option>
         </select>
         <span style="font-weight:700;font-size:1.1rem;color:#999">-</span>
@@ -234,7 +234,11 @@ function renderMain(){
   document.getElementById('h_case_id').textContent=Q.case_id;document.getElementById('h_name').textContent=Q.name||'---';
   document.getElementById('d_case_id').textContent=Q.case_id;document.getElementById('d_name').textContent=Q.name;
   document.getElementById('d_tel').textContent=Q.tel;document.getElementById('d_address').textContent=Q.address;
-  document.getElementById('d_equipment').value=Q.equipment;
+  var eqSel=document.getElementById('d_equipment');
+  var eqOpts={YA:[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン']],HM:[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン']],CP:[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン']],EC:[['エコキュート','エコキュート'],['その他','その他']],HC:[['ハウスクリーニング','ハウスクリーニング']]};
+  var opts=eqOpts[Q.prefix]||[['ルームエアコン','ルームエアコン'],['業務用エアコン','業務用エアコン'],['エコキュート','エコキュート'],['その他','その他']];
+  eqSel.innerHTML=opts.map(function(o){return'<option value="'+o[0]+'">'+o[1]+'</option>';}).join('');
+  eqSel.value=Q.equipment;if(!eqSel.value&&opts.length>0)eqSel.value=opts[0][0];
   if(Q.staff_id){var s=String(Q.staff_id);while(s.length<4)s='0'+s;document.getElementById('q_staff_id').value=s;lookupStaff();}
   document.getElementById('q_email').value=Q.email||'';toggleEmailWarn();
   var isEC=Q.prefix==='EC',isHC=Q.prefix==='HC';
