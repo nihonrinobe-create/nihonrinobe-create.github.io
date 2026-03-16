@@ -430,11 +430,11 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <div class="card" style="margin-bottom:12px;margin-top:10px">
             <div style="font-weight:700;font-size:.95rem;margin-bottom:8px;color:var(--orange)">📝 見積書の種別</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              <label style="border:2px solid var(--orange);border-radius:10px;padding:12px 8px;text-align:center;font-size:.9rem;font-weight:700;cursor:pointer;background:var(--orange-bg);transition:all .2s" id="est_chk_type_repair">
-                <input type="radio" name="est_chk_doc_type" value="見積書" checked onchange="onEstChkTypeChange()" style="display:none"> 🔧 修理見積書
-              </label>
               <label style="border:2px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;font-size:.9rem;font-weight:700;cursor:pointer;background:#fff;transition:all .2s" id="est_chk_type_diag">
                 <input type="radio" name="est_chk_doc_type" value="診断見積書" onchange="onEstChkTypeChange()" style="display:none"> 📋 診断見積書
+              </label>
+              <label style="border:2px solid var(--orange);border-radius:10px;padding:12px 8px;text-align:center;font-size:.9rem;font-weight:700;cursor:pointer;background:var(--orange-bg);transition:all .2s" id="est_chk_type_repair">
+                <input type="radio" name="est_chk_doc_type" value="見積書" checked onchange="onEstChkTypeChange()" style="display:none"> 🔧 修理見積書
               </label>
             </div>
             <div id="est_chk_diag_fee_info" style="display:none;margin-top:8px;font-size:.85rem;color:var(--orange);font-weight:600"></div>
@@ -536,11 +536,11 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div class="card" style="margin-bottom:12px">
         <div style="font-weight:700;font-size:.95rem;margin-bottom:8px;color:var(--orange)">📝 見積書の種別</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <label style="border:2px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;font-size:.9rem;font-weight:700;cursor:pointer;background:#fff;transition:all .2s" id="res_est_type_repair">
-            <input type="radio" name="res_est_doc_type" value="見積書" checked onchange="onResEstTypeChange()" style="display:none"> 🔧 修理見積書
-          </label>
           <label style="border:2px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;font-size:.9rem;font-weight:700;cursor:pointer;background:#fff;transition:all .2s" id="res_est_type_diag">
             <input type="radio" name="res_est_doc_type" value="診断見積書" onchange="onResEstTypeChange()" style="display:none"> 📋 診断見積書
+          </label>
+          <label style="border:2px solid var(--orange);border-radius:10px;padding:12px 8px;text-align:center;font-size:.9rem;font-weight:700;cursor:pointer;background:var(--orange-bg);transition:all .2s" id="res_est_type_repair">
+            <input type="radio" name="res_est_doc_type" value="見積書" checked onchange="onResEstTypeChange()" style="display:none"> 🔧 修理見積書
           </label>
         </div>
         <div id="res_est_diag_fee_info" style="display:none;margin-top:8px;font-size:.85rem;color:var(--orange);font-weight:600"></div>
@@ -1061,6 +1061,18 @@ function applyPrefixUI(prefix) {
   if (_estAddCond) _estAddCond.style.display = isHC ? 'none' : '';
   const _resAddCond = document.getElementById('res_add_conditions_section');
   if (_resAddCond) _resAddCond.style.display = isHC ? 'none' : '';
+  // HC: 見積種別選択を非表示（清掃作業固定）
+  var _resEstTypeCard = document.getElementById('res_est_type_repair');
+  if (_resEstTypeCard) _resEstTypeCard.parentElement.parentElement.style.display = isHC ? 'none' : '';
+  var _estChkTypeCard = document.getElementById('est_chk_type_repair');
+  if (_estChkTypeCard) _estChkTypeCard.parentElement.parentElement.style.display = isHC ? 'none' : '';
+  // HC: 見積種別を修理見積書（清掃作業見積書）に固定
+  if (isHC) {
+    var _resDocRadio = document.querySelector('input[name="res_est_doc_type"][value="見積書"]');
+    if (_resDocRadio) _resDocRadio.checked = true;
+    var _estChkDocRadio = document.querySelector('input[name="est_chk_doc_type"][value="見積書"]');
+    if (_estChkDocRadio) _estChkDocRadio.checked = true;
+  }
   // HC-: 診断見積のみのオレンジ枠内追加条件を非表示
   const _diagAddCond = document.getElementById('diag_add_conditions_section');
   if (_diagAddCond) _diagAddCond.style.display = isHC ? 'none' : '';
