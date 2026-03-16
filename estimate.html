@@ -338,12 +338,6 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
               style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right"
               oninput="recalc()">
           </div>
-          <div class="inv-est-row" data-inv-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
-            <span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span>
-            <input type="number" class="inv-est-price" placeholder="金額（税抜）" inputmode="numeric"
-              style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right"
-              oninput="recalc()">
-          </div>
           <div class="inv-est-row" data-inv-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
             <span style="font-size:.9rem;font-weight:600;flex:1">室外機特殊設置</span>
             <input type="number" class="inv-est-price" placeholder="金額（税抜）" inputmode="numeric"
@@ -458,10 +452,6 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
                     <span style="font-size:.9rem;font-weight:600;flex:1">高所危険作業</span>
                     <input type="number" class="est-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
                   </div>
-                  <div class="est-inv-row" data-inv-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
-                    <span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span>
-                    <input type="number" class="est-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
-                  </div>
                   <div class="est-inv-row" data-inv-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
                     <span style="font-size:.9rem;font-weight:600;flex:1">室外機特殊設置</span>
                     <input type="number" class="est-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
@@ -489,13 +479,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
                     <span class="est-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>
                     <button type="button" onclick="estCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>
                   </div>
-                  <button type="button" onclick="this.closest('.est-custom-row').remove();recalc()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">×</button>
                 </div>
               </div>
               <button type="button" onclick="addEstCustomItem()" style="background:#eee;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:.85rem;cursor:pointer;margin-top:4px">＋ 項目を追加</button>
             </div>
-
-            <!-- クーポン（後日見積分） -->
 
             <!-- クーポン（後日見積分） -->
             <div class="section-title" style="margin-top:10px">🏷 クーポン / 紹介コード</div>
@@ -538,7 +525,18 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <!-- 追加項目はJS動的挿入 -->
           <div id="diag_est_extra_rows"></div>
         </div>
+        <div style="margin-top:10px;border-top:2px solid var(--border);padding-top:8px">
+          <div style="display:flex;justify-content:space-between;font-size:.9rem;color:var(--text-sub)">
+            <span>合計（税抜）</span><span id="diag_est_subtotal_ex">¥9,000</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.9rem;color:var(--text-sub)">
+            <span>消費税（10%）</span><span id="diag_est_tax">¥900</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:700;margin-top:4px">
+            <span>合計（税込）</span><span id="diag_est_total_display" style="color:var(--blue)">¥9,900</span>
+          </div>
         </div>
+      </div>
 
       <!-- 診断見積：追加条件・追加項目・クーポン（オレンジ枠） -->
       <div style="border:2px solid var(--orange);border-radius:12px;padding:14px;background:#fffaf5;margin-top:12px">
@@ -551,10 +549,6 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
             <div id="diag_inv_options_area">
               <div class="diag-inv-row" data-inv-name="高所危険作業" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
                 <span style="font-size:.9rem;font-weight:600;flex:1">高所危険作業</span>
-                <input type="number" class="diag-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
-              </div>
-              <div class="diag-inv-row" data-inv-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
-                <span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span>
                 <input type="number" class="diag-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
               </div>
               <div class="diag-inv-row" data-inv-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
@@ -596,17 +590,6 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <div id="diag_coupon_result" style="font-size:.85rem;margin-top:5px;font-weight:bold"></div>
         </div>
 
-        <div class="estimate-total-box" style="margin-top:12px">
-          <div id="diag_est_breakdown_area" style="margin-bottom:8px"></div>
-          <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;margin-bottom:4px">
-            <span>合計（税抜）</span><span id="diag_est_subtotal_ex">¥0</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#a05000;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)">
-            <span>消費税（10%）</span><span id="diag_est_tax">¥0</span>
-          </div>
-          <div class="estimate-total-label">診断見積り合計（税込）</div>
-          <div class="estimate-total-amount" id="diag_est_total_display">¥0</div>
-        </div>
       </div>
     </div>
 
@@ -631,10 +614,6 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
             <div id="res_inv_options_area">
               <div class="res-inv-row" data-inv-name="高所危険作業" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
                 <span style="font-size:.9rem;font-weight:600;flex:1">高所危険作業</span>
-                <input type="number" class="res-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
-              </div>
-              <div class="res-inv-row" data-inv-name="業務用点検" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
-                <span style="font-size:.9rem;font-weight:600;flex:1">業務用点検</span>
                 <input type="number" class="res-inv-price" placeholder="金額（税抜）" inputmode="numeric" style="width:130px;padding:8px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;text-align:right" oninput="recalc()">
               </div>
               <div class="res-inv-row" data-inv-name="室外機特殊設置" style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
@@ -1577,8 +1556,7 @@ function addEstCustomItem() {
     '<button type="button" onclick="estCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>' +
     '<span class="est-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>' +
     '<button type="button" onclick="estCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>' +
-    '</div>' +
-    '<button type="button" onclick="this.closest(\'.est-custom-row\').remove();recalc()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">×</button>';
+    '</div>';
   area.appendChild(div);
 }
 function estCustomQtyChange(btn, delta) {
@@ -2399,9 +2377,7 @@ var linkQuote = document.getElementById('link_quote_edit');
 if (linkQuote && P.case_id) {
   linkQuote.href = 'https://nihonrinobe-create.github.io/quote.html?c=' + encodeURIComponent(P.case_id);
 }
-  
-  window._estVer = gasResult.est_ver || '';
-  window._estDocType = gasResult.est_doc_type || '';
+
   window._submittedPayload = payload;
 }
 
@@ -2481,10 +2457,8 @@ let docItems = [];
     transfer_name: (type === 'invoice' && document.getElementById('inv_transfer_name'))
       ? document.getElementById('inv_transfer_name').value.trim()
       : (sp.transfer_name || P.transfer_name || ''),
-    quote_ver: params.get('quote_ver') || window._estVer || '',
-    quote_type: params.get('quote_type') || window._estDocType || '',
   };
-  
+
   try {
     const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
     const result2 = await res.json();
