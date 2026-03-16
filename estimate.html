@@ -989,6 +989,21 @@ function resetAddConditions(areaId) {
   });
 }
 
+function resetCustomArea(areaId, rowClass, nameClass, priceClass, qtyClass, qtyFnName) {
+  var area = document.getElementById(areaId);
+  if (!area) return;
+  area.innerHTML = '<div class="' + rowClass + '" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">'
+    + '<input type="text" class="' + nameClass + '" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+    + '<input type="number" class="' + priceClass + '" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+    + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+    + '<button type="button" onclick="' + qtyFnName + '(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
+    + '<span class="' + qtyClass + '" style="font-weight:700;width:20px;text-align:center">1</span>'
+    + '<button type="button" onclick="' + qtyFnName + '(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>'
+    + '</div>'
+    + '<button type="button" onclick="this.closest(\'.' + rowClass + '\').remove();recalc()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">×</button>'
+    + '</div>';
+}
+
 function resetPaymentMethod() {
   const first = document.querySelector('input[name="payment"]');
   if (first) {
@@ -1007,29 +1022,74 @@ function onPrefixChange() {
   if (prefix !== 'YA') alphaEl.value = '';
   updateCaseIdPreview();
 
-  // --- リセット処理 ---
-  // どのprefixへの変更でも機器選択・P.equipment・P.initial_feeをリセット
+  // --- 包括的リセット ---
+  // 機器
   document.getElementById('manual_equipment').value = '';
   P.equipment = '';
-  P.initial_fee = getDiagFee(''); // 空=9000（デフォルト）
+  P.initial_fee = (prefix === 'HC') ? 0 : getDiagFee('');
+  P.is_repair = false;
 
-  const isToEC = (prefix === 'EC');
-  const isToHC = (prefix === 'HC');
+  // 修理メニュー数量（全エリア）
+  resetRepairMenuQty('');
 
-  if (isToEC || isToHC) {
-    // EC/HC へ変更：修理メニュー数量をリセット
-    resetRepairMenuQty(prefix);
-    if (isToHC) {
-      // HC へ変更：追加条件の金額もリセット（HC時は追加条件自体が非表示になる）
-      resetAddConditions('inv_options_area');
-      // HCはクーポンも消す
-      coupons = []; couponDiscount = 0;
-      const couponRes = document.getElementById('est_coupon_result');
-      if (couponRes) couponRes.textContent = '';
-      // HCはinitial_fee = 0（診断費なし）
-      P.initial_fee = 0;
-    }
+  // 追加条件（全エリア）
+  resetAddConditions('inv_options_area');
+  resetAddConditions('est_inv_options_area');
+  resetAddConditions('res_inv_options_area');
+
+  // クーポン（全種類）
+  coupons = []; couponDiscount = 0;
+  resCoupons = []; resCouponDiscount = 0;
+  estCoupons = []; estCouponDiscount = 0;
+  var _cpRes = document.getElementById('est_coupon_result');
+  if (_cpRes) _cpRes.textContent = '';
+  var _cpRes2 = document.getElementById('res_est_coupon_result');
+  if (_cpRes2) _cpRes2.textContent = '';
+  var _cpRes3 = document.getElementById('est_chk_coupon_result');
+  if (_cpRes3) _cpRes3.textContent = '';
+
+  // ステータスを完工に戻す
+  var _statusRadio = document.querySelector('input[name="contract_status"][value="完工"]');
+  if (_statusRadio) _statusRadio.checked = true;
+
+  // 作業種別を故障診断に戻す
+  var _workRadio = document.querySelector('input[name="manual_work_type"][value="診断"]');
+  if (_workRadio) _workRadio.checked = true;
+
+  // 後日見積チェックボックスOFF＋非表示
+  var _chkEst = document.getElementById('chk_estimate');
+  var _estArea = document.getElementById('estimate_area');
+  if (_chkEst) _chkEst.checked = false;
+  if (_estArea) _estArea.style.display = 'none';
+
+  // 見積種別ラジオを修理見積書に戻す
+  var _resDocRadio = document.querySelector('input[name="res_est_doc_type"][value="見積書"]');
+  if (_resDocRadio) _resDocRadio.checked = true;
+  var _estChkDocRadio = document.querySelector('input[name="est_chk_doc_type"][value="見積書"]');
+  if (_estChkDocRadio) _estChkDocRadio.checked = true;
+
+  // 自由入力リセット（完工）
+  resetCustomArea('custom_est_items_area', 'custom-est-row', 'custom-est-name', 'custom-est-price', 'custom-est-qty', 'customEstQtyChange');
+  // 自由入力リセット（後日見積）
+  resetCustomArea('est_custom_items_area', 'est-custom-row', 'est-custom-name', 'est-custom-price', 'est-custom-qty', 'estCustomQtyChange');
+  // 自由入力リセット（予約見積）— resest用はresCustomQtyChangeではなくresestCustomQtyChange
+  var _resCustom = document.getElementById('res_custom_items_area');
+  if (_resCustom) {
+    _resCustom.innerHTML = '<div class="res-custom-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">'
+      + '<input type="text" class="res-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+      + '<input type="number" class="res-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
+      + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+      + '<button type="button" onclick="resCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
+      + '<span class="res-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>'
+      + '<button type="button" onclick="resCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>'
+      + '</div></div>';
   }
+
+  // メモ・予約日時リセット
+  var _memo = document.getElementById('staff_memo');
+  if (_memo) _memo.value = '';
+  var _reserveDate = document.getElementById('reserve_date');
+  if (_reserveDate) _reserveDate.value = '';
 
   updateEquipOptions(prefix);
   updateEstChkEquipOptions(prefix);
@@ -1085,46 +1145,6 @@ function applyPrefixUI(prefix) {
     if (toggleFixed) toggleFixed.style.display = 'block';
     P.initial_fee = 0;
     P.is_repair = false;
-    // 追加条件をリセット（完工・後日見積・予約見積・診断見積 全エリア）
-    document.querySelectorAll('#inv_options_area .inv-est-price').forEach(function(input) { input.value = ''; });
-    document.querySelectorAll('#est_inv_options_area .est-inv-price').forEach(function(input) { input.value = ''; });
-    document.querySelectorAll('#res_inv_options_area .res-inv-price').forEach(function(input) { input.value = ''; });
-    document.querySelectorAll('#diag_inv_options_area .diag-inv-price').forEach(function(input) { input.value = ''; });
-    // 後日見積チェックボックスをOFF・estimate_areaを非表示にする
-    const _chkEst = document.getElementById('chk_estimate');
-    const _estArea = document.getElementById('estimate_area');
-    if (_chkEst) _chkEst.checked = false;
-    if (_estArea) _estArea.style.display = 'none';
-    // 後日見積エリア内の修理メニュー数量をリセット（再チェックON時に残骸が出ないよう）
-    resetRepairMenuQty('');
-    // 後日見積の自由入力もリセット
-    const _estCustomArea = document.getElementById('est_custom_items_area');
-    if (_estCustomArea) {
-      _estCustomArea.innerHTML = '<div class="est-custom-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">'
-        + '<input type="text" class="est-custom-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
-        + '<input type="number" class="est-custom-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
-        + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
-        + '<button type="button" onclick="estCustomQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
-        + '<span class="est-custom-qty" style="font-weight:700;width:20px;text-align:center">1</span>'
-        + '<button type="button" onclick="estCustomQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>'
-        + '</div>'
-        + '<button type="button" onclick="this.closest(\'.est-custom-row\').remove();recalc()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">\u00d7</button>'
-        + '</div>';
-    }
-    // 完工の追加項目（自由入力）をリセット
-    const _customArea = document.getElementById('custom_est_items_area');
-    if (_customArea) {
-      _customArea.innerHTML = '<div class="custom-est-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">'
-        + '<input type="text" class="custom-est-name" placeholder="項目名" style="flex:2;min-width:100px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
-        + '<input type="number" class="custom-est-price" placeholder="金額（税抜）" inputmode="numeric" style="flex:1;min-width:90px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:.95rem" oninput="recalc()">'
-        + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
-        + '<button type="button" onclick="customEstQtyChange(this,-1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:#eee;color:#555">-</button>'
-        + '<span class="custom-est-qty" style="font-weight:700;width:20px;text-align:center">1</span>'
-        + '<button type="button" onclick="customEstQtyChange(this,1)" style="width:28px;height:28px;border-radius:50%;border:none;font-size:1rem;cursor:pointer;background:var(--blue);color:#fff">+</button>'
-        + '</div>'
-        + '<button type="button" onclick="this.closest(\'.custom-est-row\').remove();recalc()" style="background:#ff5252;color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;flex-shrink:0">×</button>'
-        + '</div>';
-    }
     recalc();
   } else {
     if (toggleFixed) toggleFixed.style.display = 'none';
@@ -2403,13 +2423,16 @@ function onEstChkEquipChange() {
 function onResEstTypeChange() {
   var dt = (document.querySelector('input[name="res_est_doc_type"]:checked') || {}).value || '見積書';
   var isDiag = (dt === '診断見積書');
-  // 修理メニュー表示/非表示
+  // 修理メニュー表示/非表示（EC/HCは常に非表示）
   var repMenu = document.getElementById('reserve_est_repairs');
-  if (repMenu) repMenu.style.display = isDiag ? 'none' : '';
+  if (repMenu) repMenu.style.display = (isDiag || currentIsHC || currentIsEC) ? 'none' : '';
+  // 追加条件（HCは常に非表示）
+  var resAddCond = document.getElementById('res_add_conditions_section');
+  if (resAddCond) resAddCond.style.display = currentIsHC ? 'none' : '';
   // 診断費情報表示
   var info = document.getElementById('res_est_diag_fee_info');
   if (info) {
-    if (isDiag) {
+    if (isDiag && !currentIsHC) {
       var eqEl = document.getElementById('manual_equipment');
       var eq = (eqEl && eqEl.value) ? eqEl.value : P.equipment;
       var fee = getDiagFee(eq);
@@ -2433,13 +2456,16 @@ function onResEstTypeChange() {
 function onEstChkTypeChange() {
   var dt = (document.querySelector('input[name="est_chk_doc_type"]:checked') || {}).value || '見積書';
   var isDiag = (dt === '診断見積書');
-  // 修理メニュー表示/非表示
+  // 修理メニュー表示/非表示（EC/HCは常に非表示）
   var repMenu = document.getElementById('estimate_repairs');
-  if (repMenu) repMenu.style.display = isDiag ? 'none' : '';
+  if (repMenu) repMenu.style.display = (isDiag || currentIsHC || currentIsEC) ? 'none' : '';
+  // 追加条件（HCは常に非表示）
+  var estAddCond = document.getElementById('est_add_conditions_section');
+  if (estAddCond) estAddCond.style.display = currentIsHC ? 'none' : '';
   // 診断費情報表示
   var info = document.getElementById('est_chk_diag_fee_info');
   if (info) {
-    if (isDiag) {
+    if (isDiag && !currentIsHC) {
       var eqEl = document.getElementById('est_chk_equipment');
       var eq = (eqEl && eqEl.value) ? eqEl.value : P.equipment;
       var fee = getDiagFee(eq);
