@@ -214,6 +214,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <input type="radio" name="contract_status" value="失注">
           <span class="icon">❌</span>失注
         </label>
+        <label class="status-label loss" onclick="onStatusChange()" id="opt_denwa_loss">
+          <input type="radio" name="contract_status" value="電話失注">
+          <span class="icon">📵</span>電話失注
+        </label>
         <label class="status-label cancel" onclick="onStatusChange()" id="opt_cancel">
           <input type="radio" name="contract_status" value="キャンセル">
           <span class="icon">🚫</span>キャンセル
@@ -222,13 +226,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
           <input type="radio" name="contract_status" value="不通・保留">
           <span class="icon">⏸️</span>不通・保留
         </label>
-
       </div>
     </div>
 
     <!-- 失注・キャンセル時の通知 -->
     <div id="notice_loss" class="status-notice loss-notice hidden">
       売上 ¥0 で報告します（広告費は記録されます）
+    </div>
+    <div id="notice_denwa_loss" class="status-notice loss-notice hidden">
+      電話段階での失注として報告します（売上 ¥0）
     </div>
     <div id="notice_cancel" class="status-notice cancel-notice hidden">
       キャンセルとして報告します（広告費は記録されます）
@@ -945,6 +951,7 @@ function initUI() {
   if (hasData) {
     document.getElementById('opt_reserve_no').style.display = 'none';
     document.getElementById('opt_loss').style.display = 'none';
+    document.getElementById('opt_denwa_loss').style.display = 'none';
     document.getElementById('opt_cancel').style.display = 'none';
     document.getElementById('opt_hold').style.display = 'none';
     document.getElementById('status_grid').style.gridTemplateColumns = '1fr 1fr';
@@ -1907,7 +1914,8 @@ function onStatusChange() {
   setTimeout(() => {
     const status = document.querySelector('input[name="contract_status"]:checked').value;
     const isKankou = (status === '完工');
-    const isLoss = (status === '失注');
+    const isLoss = (status === '失注' || status === '電話失注');
+    const isDenwaLoss = (status === '電話失注');
     const isCancel = (status === 'キャンセル');
     const isReserveEst = (status === '予約（見積あり）');
     const isReserveNo = (status === '予約（見積なし）');
@@ -1952,6 +1960,7 @@ function onStatusChange() {
     if (toggle) toggle.style.display = (isKankou && !isHCPrefix) ? 'block' : 'none';
 
     document.getElementById('notice_loss').classList.toggle('hidden', !isLoss);
+    document.getElementById('notice_denwa_loss').classList.toggle('hidden', !isDenwaLoss);
     document.getElementById('notice_cancel').classList.toggle('hidden', !isCancel);
     document.getElementById('notice_reserve_est').classList.toggle('hidden', !isReserveEst);
     document.getElementById('notice_reserve_no').classList.toggle('hidden', !isReserveNo);
@@ -1966,6 +1975,7 @@ function onStatusChange() {
     const btn = document.getElementById('btn_submit');
     btn.className = 'btn-submit';
     if (isKankou) { btn.classList.add('btn-primary'); btn.textContent = '完了報告を送信'; }
+    else if (isDenwaLoss) { btn.classList.add('btn-loss'); btn.textContent = '電話失注として報告'; }
     else if (isLoss) { btn.classList.add('btn-loss'); btn.textContent = '失注として報告'; }
     else if (isCancel) { btn.classList.add('btn-cancel'); btn.textContent = 'キャンセルとして報告'; }
     else if (isReserveEst) { btn.classList.add('btn-reserve'); btn.textContent = '予約＋見積書を送信'; }
@@ -2269,6 +2279,7 @@ async function submitReport() {
   const doneMsg = document.getElementById('done_msg');
   if (status === '完工') doneMsg.innerHTML = '✅ 完了報告を送信しました';
   else if (status === '失注') doneMsg.innerHTML = '❌ 失注として記録しました';
+  else if (status === '電話失注') doneMsg.innerHTML = '📵 電話失注として記録しました';
   else if (status === 'キャンセル') doneMsg.innerHTML = '🚫 キャンセルとして記録しました';
   else if (isReserveEst) doneMsg.innerHTML = '📄 予約として記録し、見積書を送信しました';
   else if (status === '不通・保留') doneMsg.innerHTML = '⏸️ 不通・保留として記録しました';
