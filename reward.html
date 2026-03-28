@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>報酬確認ポータル</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+:root{--bg:#eef0f4;--card:#fff;--hdr:#161b26;--hdr2:#1e2536;--text:#161b26;--text2:#3d4663;--muted:#7c839a;--inv:#fff;--lbl:#555d78;--border:#d8dce6;--focus:#3b6df0;--accent:#3b6df0;--accent-h:#2d57c7;--green:#0a8a5e;--amber:#c27a00;--red:#c93030;--shadow:0 1px 3px rgba(0,0,0,.05);--r:10px;--rlg:14px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{font-size:14px}body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}.mono{font-family:'JetBrains Mono',monospace}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes spin{to{transform:rotate(360deg)}}
+
+#loginView{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:linear-gradient(160deg,#161b26,#232b3e 40%,#1a2030)}
+.lcard{width:100%;max-width:400px;background:var(--card);border-radius:var(--rlg);box-shadow:0 8px 30px rgba(0,0,0,.12);overflow:hidden;animation:fadeUp .4s ease both}
+.lcard-hdr{background:var(--hdr);padding:28px 26px 24px;text-align:center;border-bottom:3px solid var(--accent)}.lcard-hdr h1{color:var(--inv);font-size:1.1rem;font-weight:700;letter-spacing:.05em}.lcard-hdr .sub{color:rgba(255,255,255,.3);font-size:.7rem;margin-top:3px;letter-spacing:.1em;text-transform:uppercase}
+.lform{padding:26px}.fld{margin-bottom:14px}.fld label{display:block;font-size:.75rem;font-weight:500;color:var(--lbl);margin-bottom:4px}.fld input,.fld select{width:100%;padding:11px;font-size:1rem;font-family:inherit;background:#f5f6f9;border:1.5px solid var(--border);border-radius:var(--r);outline:none;transition:border .2s}.fld input:focus,.fld select:focus{border-color:var(--focus);box-shadow:0 0 0 3px rgba(59,109,240,.1)}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 22px;font-family:inherit;font-size:.9rem;font-weight:600;border:none;border-radius:var(--r);cursor:pointer;transition:all .2s}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{width:100%;background:var(--accent);color:#fff}.btn-p:hover:not(:disabled){background:var(--accent-h)}
+.btn-s{background:#f5f6f9;color:var(--text2);font-size:.8rem;padding:8px 14px}.btn-s:hover:not(:disabled){background:var(--border)}
+.btn-g{background:transparent;color:rgba(255,255,255,.5);font-size:.78rem;padding:6px 10px}.btn-g:hover:not(:disabled){color:#fff;background:rgba(255,255,255,.08)}
+.lerr{display:none;margin-top:12px;padding:9px;background:#fef0f0;color:var(--red);border-radius:var(--r);font-size:.8rem;text-align:center}.lerr.on{display:block}
+
+#appView{display:none}
+.topbar{background:var(--hdr);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:2px solid rgba(59,109,240,.3)}.topbar h2{color:var(--inv);font-size:.88rem;font-weight:600}.topbar .meta{color:rgba(255,255,255,.35);font-size:.68rem}.topbar-r{display:flex;gap:4px}
+.wrap{max-width:1000px;margin:0 auto;padding:14px 10px 60px}
+
+.ctrl-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.ctrl-bar label{font-size:.8rem;font-weight:500;color:var(--lbl)}
+.ctrl-bar input[type="date"],.ctrl-bar select{font-family:inherit;font-size:.9rem;font-weight:600;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--card);color:var(--text);cursor:pointer;outline:none}
+.date-range{font-size:.75rem;color:var(--muted);padding:3px 10px;background:var(--card);border-radius:20px;border:1px solid var(--border)}
+.admin-badge{font-size:.65rem;background:var(--accent);color:#fff;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:6px}
+
+.tabs{display:flex;gap:2px;margin-bottom:14px;background:var(--border);border-radius:var(--r);padding:3px;overflow-x:auto}.tab{flex:1;min-width:0;padding:8px 12px;font-size:.78rem;font-weight:600;text-align:center;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:7px;transition:all .2s;white-space:nowrap}.tab.active{background:var(--card);color:var(--accent);box-shadow:var(--shadow)}.tab:hover:not(.active){color:var(--text2)}
+
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}.scard{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:12px;box-shadow:var(--shadow)}.scard .sl{font-size:.65rem;color:var(--muted);font-weight:500;margin-bottom:3px}.scard .sv{font-size:1.1rem;font-weight:700}
+
+.week{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);animation:fadeUp .3s ease both}
+.week-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--hdr2);color:var(--inv)}.week-hdr h3{font-size:.82rem;font-weight:600}.week-tf{font-size:1.05rem;font-weight:700}.week-tf .lb{font-size:.65rem;font-weight:400;opacity:.5;margin-right:5px}
+table{width:100%;border-collapse:collapse;font-size:.78rem}thead th{background:#f0f2f6;color:var(--lbl);font-weight:600;font-size:.68rem;padding:7px 7px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}tbody td{padding:6px 7px;border-bottom:1px solid #f0f2f5}.r{text-align:right}.total-row td{font-weight:700;background:#f7f8fb;border-top:2px solid var(--border)}.neg{color:var(--red)}.pos{color:var(--green)}tbody tr:hover{background:#f7f8fb}
+.empty-w{padding:20px;text-align:center;color:var(--muted);font-size:.82rem}
+.app-err{color:var(--red);font-size:.8rem;padding:5px 0}
+
+.loading{display:none;position:fixed;inset:0;background:rgba(238,240,244,.75);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px)}.loading.on{display:flex}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--hdr);color:#fff;padding:9px 18px;border-radius:var(--r);font-size:.8rem;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.12);z-index:10000;opacity:0;transition:all .3s;pointer-events:none}.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:640px){.summary{grid-template-columns:1fr 1fr;gap:5px}.scard{padding:9px 10px}.scard .sv{font-size:.95rem}table{font-size:.72rem}thead th{padding:5px 4px;font-size:.62rem}tbody td{padding:5px 4px}.hide-sm{display:none}.ctrl-bar{flex-direction:column;gap:5px}}
+</style>
+</head>
+<body>
+<div class="loading" id="loading"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<div id="loginView"><div class="lcard"><div class="lcard-hdr"><h1>報酬確認ポータル</h1><div class="sub">Compensation Portal</div></div>
+<div class="lform"><div class="fld"><label>担当者番号</label><input id="staffId" inputmode="numeric" autocomplete="username" placeholder="例: 0001"></div>
+<div class="fld"><label>PIN（6〜8桁）</label><input id="pin" type="password" class="mono" inputmode="numeric" autocomplete="current-password" maxlength="8" placeholder="••••••"></div>
+<button class="btn btn-p" id="loginBtn" onclick="doLogin()">ログイン</button><div class="lerr" id="loginErr"></div></div></div></div>
+
+<div id="appView">
+<div class="topbar"><div><h2>報酬確認ポータル</h2><div class="meta" id="lblUser"></div></div><div class="topbar-r"><button class="btn btn-g" onclick="doLogout()">ログアウト</button></div></div>
+<div class="wrap">
+  <div class="ctrl-bar">
+    <label>開始日</label><input type="date" id="startDate">
+    <div id="adminSelect" style="display:none"><label>対象</label><select id="memberSelect" onchange="onMemberChange()"></select></div>
+    <button class="btn btn-s" id="dateBtn" onclick="reload()">表示更新</button>
+    <span class="date-range" id="dateRange"></span>
+  </div>
+  <div class="tabs" id="tabBar"></div>
+  <div class="summary" id="summaryArea"></div>
+  <div id="weeksArea"></div>
+  <p class="app-err" id="appErr"></p>
+</div></div>
+
+<script>
+// ★★★ ここにGASのWebアプリURLを貼る ★★★
+var GAS_API_URL = 'https://script.google.com/macros/s/ここにデプロイIDを貼る/exec';
+
+var token='',busy=false,seq=0,latest=0,ua=navigator.userAgent||'';
+var currentData=null,activeTab='own',isAdmin=false,myStaffId='',viewStaffId='';
+
+(function(){$('pin').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin()});$('staffId').addEventListener('keydown',function(e){if(e.key==='Enter')$('pin').focus()})})();
+
+// ---- GAS API呼び出し ----
+async function callApi(payload){
+  payload._portal = true;
+  var resp = await fetch(GAS_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  });
+  // GASのリダイレクト後のレスポンスを取得
+  var text = await resp.text();
+  try { return JSON.parse(text); }
+  catch(e) {
+    // GASがHTMLを返した場合（リダイレクトページ等）
+    // doPost経由でJSONが返るはずだが、デプロイ設定が間違っている可能性
+    throw new Error('サーバーからの応答が不正です。デプロイ設定を確認してください。');
+  }
+}
+
+function $(id){return document.getElementById(id)}
+function yen(n){return'¥'+Number(n||0).toLocaleString('ja-JP')}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on')},2500)}
+function fmtMD(s){if(!s)return'-';var p=s.split('-');return parseInt(p[1])+'/'+parseInt(p[2])}
+function colorVal(n){if(n<0)return'<span class="neg mono">'+yen(n)+'</span>';if(n>0)return'<span class="pos mono">'+yen(n)+'</span>';return'<span class="mono">¥0</span>'}
+function setBusy(f){busy=!!f;['loginBtn','dateBtn'].forEach(function(id){var e=$(id);if(e)e.disabled=!!f})}
+
+// ===== LOGIN =====
+async function doLogin(){
+  if(busy)return;var sid=$('staffId').value.trim(),p=$('pin').value.trim();$('loginErr').classList.remove('on');
+  if(!sid||!p){$('loginErr').textContent='担当者番号とPINを入力してください';$('loginErr').classList.add('on');return}
+  setBusy(true);$('loginBtn').textContent='ログイン中...';$('loading').classList.add('on');
+  try{
+    var r = await callApi({ action:'login', staffId:sid, pin:p, ua:ua });
+    $('loading').classList.remove('on');setBusy(false);$('loginBtn').textContent='ログイン';
+    if(r&&r.ok){token=r.sessionToken;myStaffId=r.staffId;viewStaffId=r.staffId;
+      $('lblUser').textContent=r.displayName+'（'+r.staffId+'）';
+      $('loginView').style.display='none';$('appView').style.display='block';bootstrap()}
+    else{$('loginErr').textContent=(r&&r.error)||'失敗';$('loginErr').classList.add('on');$('pin').value='';$('pin').focus()}
+  }catch(e){
+    $('loading').classList.remove('on');setBusy(false);$('loginBtn').textContent='ログイン';
+    $('loginErr').textContent=e.message||'通信エラー';$('loginErr').classList.add('on');$('pin').value='';$('pin').focus();
+  }
+}
+
+// ===== DATA =====
+async function bootstrap(){
+  if(!token||busy)return;var s=++seq;latest=s;setBusy(true);$('loading').classList.add('on');$('appErr').textContent='';
+  try{
+    var r = await callApi({ action:'bootstrap', sessionToken:token, startDate:null, ua:ua });
+    if(s!==latest)return;$('loading').classList.remove('on');setBusy(false);
+    if(!r||!r.ok){handleErr(r&&r.error);return}
+    currentData=r;isAdmin=r.isAdmin||false;
+    $('startDate').value=r.startDate;updateDateRange(r.startDate);
+    if(isAdmin&&r.allMembers){$('adminSelect').style.display='';var sel=$('memberSelect');sel.innerHTML='';
+      r.allMembers.forEach(function(m){var o=document.createElement('option');o.value=m.staffId;o.textContent=m.staffId+' '+m.name;sel.appendChild(o)});sel.value=myStaffId;
+      $('lblUser').innerHTML=r.displayName+'（'+r.staffId+'）<span class="admin-badge">管理者</span>';}
+    buildTabs();renderOwn();
+  }catch(e){if(s!==latest)return;$('loading').classList.remove('on');setBusy(false);handleErr(e.message)}
+}
+
+async function reload(){
+  if(!token||busy)return;var s=++seq;latest=s;setBusy(true);$('loading').classList.add('on');$('appErr').textContent='';
+  var target=isAdmin?$('memberSelect').value:null;
+  try{
+    var r = await callApi({ action:'changeDate', sessionToken:token, startDate:$('startDate').value, targetStaffId:target, ua:ua });
+    if(s!==latest)return;$('loading').classList.remove('on');setBusy(false);
+    if(!r||!r.ok){handleErr(r&&r.error);return}
+    currentData.weeks=r.weeks;currentData.referrees=r.referrees;currentData.referralReward=r.referralReward;
+    if(r.viewStaffId)viewStaffId=r.viewStaffId;
+    $('startDate').value=r.startDate;updateDateRange(r.startDate);
+    if(activeTab==='own')renderOwn();else if(activeTab==='ref')renderRef();
+  }catch(e){if(s!==latest)return;$('loading').classList.remove('on');setBusy(false);handleErr(e.message)}
+}
+
+function onMemberChange(){reload()}
+
+async function loadReferreeDetail(refId){
+  if(!token||busy)return;var s=++seq;latest=s;setBusy(true);$('loading').classList.add('on');
+  $('summaryArea').innerHTML='';$('weeksArea').innerHTML='';
+  try{
+    var r = await callApi({ action:'viewReferree', sessionToken:token, referreeStaffId:refId, startDate:$('startDate').value, ua:ua });
+    if(s!==latest)return;$('loading').classList.remove('on');setBusy(false);
+    if(!r||!r.ok){handleErr(r&&r.error);return}
+    $('summaryArea').innerHTML='<div class="scard" style="grid-column:span 4"><div class="sl">被紹介者</div><div class="sv">'+esc(r.refName)+'の明細</div></div>';
+    $('weeksArea').innerHTML=r.weeks?renderWeeksHTML(r.weeks,false):'<div class="empty-w">データなし</div>';
+  }catch(e){if(s!==latest)return;$('loading').classList.remove('on');setBusy(false);handleErr(e.message)}
+}
+
+async function doLogout(){
+  if(busy)return;setBusy(true);$('loading').classList.add('on');
+  try{ await callApi({ action:'logout', sessionToken:token, ua:ua }); }catch(e){}
+  $('loading').classList.remove('on');setBusy(false);resetLogin();
+}
+
+// ===== UI =====
+function updateDateRange(start){if(!start)return;var s=new Date(start),e=new Date(s.getTime()+27*86400000);
+  var days=['日','月','火','水','木','金','土'];var f=function(d){return(d.getMonth()+1)+'/'+d.getDate()+'（'+days[d.getDay()]+'）'};
+  $('dateRange').textContent=f(s)+'〜'+f(e)+'　4週分'}
+
+function buildTabs(){var bar=$('tabBar');bar.innerHTML='';
+  bar.appendChild(mkTab('own','自分の報酬'));
+  if((currentData.referrees&&currentData.referrees.length)||isAdmin)bar.appendChild(mkTab('ref','紹介者報酬'));
+  if(currentData.referrees)currentData.referrees.forEach(function(r){bar.appendChild(mkTab('detail_'+r.staffId,r.name+'の明細'))});
+  activateTab('own')}
+
+function mkTab(id,label){var b=document.createElement('button');b.className='tab';b.textContent=label;b.dataset.tab=id;b.onclick=function(){activateTab(id)};return b}
+function activateTab(id){activeTab=id;document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===id)});
+  if(id==='own')renderOwn();else if(id==='ref')renderRef();else if(id.indexOf('detail_')===0)loadReferreeDetail(id.replace('detail_',''))}
+
+function renderOwn(){
+  if(!currentData||!currentData.weeks){$('weeksArea').innerHTML='<div class="empty-w">データがありません</div>';$('summaryArea').innerHTML='';return}
+  var weeks=currentData.weeks,tT=0,tS=0,tA=0,tR=0;
+  weeks.forEach(function(w){tT+=w.transferAmount;tS+=w.totals.sales;tA+=w.totals.adCost;tR+=w.totals.reward});
+  $('summaryArea').innerHTML='<div class="scard"><div class="sl">4週合計 振込</div><div class="sv mono" style="color:var(--text)">'+yen(tT)+'</div></div>'
+    +'<div class="scard"><div class="sl">売上合計</div><div class="sv mono" style="color:var(--green)">'+yen(tS)+'</div></div>'
+    +'<div class="scard"><div class="sl">広告費合計</div><div class="sv mono" style="color:var(--amber)">'+yen(tA)+'</div></div>'
+    +'<div class="scard"><div class="sl">報酬合計</div><div class="sv mono" style="color:var(--text)">'+yen(tR)+'</div></div>';
+  $('weeksArea').innerHTML=renderWeeksHTML(weeks,true)}
+
+function renderRef(){
+  var rr=currentData.referralReward;if(!rr){$('summaryArea').innerHTML='';$('weeksArea').innerHTML='<div class="empty-w">紹介者報酬はありません</div>';return}
+  $('summaryArea').innerHTML='<div class="scard"><div class="sl">紹介者報酬合計（4週）</div><div class="sv mono" style="color:var(--green)">'+yen(rr.total)+'</div></div>'
+    +'<div class="scard"><div class="sl">被紹介者</div><div class="sv">'+(rr.byRef?rr.byRef.length:0)+'人</div></div><div class="scard"></div><div class="scard"></div>';
+  var html='';
+  if(rr.byRef&&rr.byRef.length){html+='<div class="week"><div class="week-hdr"><h3>紹介者報酬 内訳</h3></div><div style="overflow-x:auto"><table><thead><tr><th>被紹介者</th><th class="r">第1週</th><th class="r">第2週</th><th class="r">第3週</th><th class="r">第4週</th><th class="r">合計</th></tr></thead><tbody>';
+    rr.byRef.forEach(function(r){html+='<tr><td>'+esc(r.name)+'</td>';r.weekCounts.forEach(function(c){html+='<td class="r">'+c+'件 / '+yen(c*3000)+'</td>'});html+='<td class="r mono" style="font-weight:700">'+yen(r.total)+'</td></tr>'});
+    html+='</tbody></table></div></div>';}
+  else html='<div class="empty-w">現在紹介者報酬はありません</div>';
+  $('weeksArea').innerHTML=html}
+
+function renderWeeksHTML(weeks,full){var html='';
+  weeks.forEach(function(w,i){var ws=fmtMD(w.weekStart),we=fmtMD(w.weekEnd);var d0=w.days[0],d6=w.days[6];
+    html+='<div class="week" style="animation-delay:'+(i*0.04)+'s"><div class="week-hdr"><h3>第'+(i+1)+'週　'+ws+'（'+(d0?d0.dow:'')+'）〜'+we+'（'+(d6?d6.dow:'')+'）</h3><div class="week-tf"><span class="lb">振込</span><span class="mono">'+yen(w.transferAmount)+'</span></div></div>';
+    if(w.totals.count===0&&w.transferAmount===0){html+='<div class="empty-w">この週のデータはまだありません</div></div>';return}
+    html+='<div style="overflow-x:auto"><table><thead><tr><th>日付</th><th>件数</th><th class="r">売上</th><th class="r">広告費</th>';
+    if(full)html+='<th class="r hide-sm">手数料</th><th class="r hide-sm">本体代</th><th class="r hide-sm">伝票代</th>';
+    html+='<th class="r">報酬</th></tr></thead><tbody>';
+    w.days.forEach(function(d){html+='<tr><td>'+fmtMD(d.date)+'（'+esc(d.dow)+'）</td><td>'+d.count+'</td><td class="r mono">'+yen(d.sales)+'</td><td class="r mono">'+yen(d.adCost)+'</td>';
+      if(full)html+='<td class="r mono hide-sm">'+yen(d.cardFee)+'</td><td class="r mono hide-sm">'+yen(d.honntai)+'</td><td class="r mono hide-sm">'+yen(d.slipCost)+'</td>';
+      html+='<td class="r">'+colorVal(d.reward)+'</td></tr>'});
+    var t=w.totals;html+='<tr class="total-row"><td>合計</td><td>'+t.count+'</td><td class="r mono">'+yen(t.sales)+'</td><td class="r mono">'+yen(t.adCost)+'</td>';
+    if(full)html+='<td class="r mono hide-sm">'+yen(t.cardFee)+'</td><td class="r mono hide-sm">'+yen(t.honntai)+'</td><td class="r mono hide-sm">'+yen(t.slipCost)+'</td>';
+    html+='<td class="r">'+colorVal(t.reward)+'</td></tr></tbody></table></div></div>'});return html}
+
+function handleErr(msg){msg=msg||'エラー';if(msg.indexOf('再ログイン')!==-1||msg.indexOf('セッション')!==-1||msg.indexOf('期限')!==-1){toast(msg);setTimeout(resetLogin,1200);return}$('appErr').textContent=msg}
+function resetLogin(){token='';currentData=null;isAdmin=false;myStaffId='';viewStaffId='';activeTab='own';$('pin').value='';$('appView').style.display='none';$('loginView').style.display='flex';$('loginErr').classList.remove('on');$('appErr').textContent='';$('weeksArea').innerHTML='';$('summaryArea').innerHTML='';$('tabBar').innerHTML='';$('adminSelect').style.display='none'}
+</script>
+</body>
+</html>
