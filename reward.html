@@ -80,23 +80,15 @@ var currentData=null,activeTab='own',isAdmin=false,myStaffId='',viewStaffId='';
 
 (function(){$('pin').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin()});$('staffId').addEventListener('keydown',function(e){if(e.key==='Enter')$('pin').focus()})})();
 
-// ---- GAS API呼び出し ----
+// ---- GAS API呼び出し（GET + base64）----
 async function callApi(payload){
-  payload._portal = true;
-  var resp = await fetch(GAS_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-    redirect: 'follow'
-  });
-  // GASのリダイレクト後のレスポンスを取得
+  var json = JSON.stringify(payload);
+  var encoded = btoa(unescape(encodeURIComponent(json)));
+  var url = GAS_API_URL + '?_portal_data=' + encodeURIComponent(encoded);
+  var resp = await fetch(url, { redirect: 'follow' });
   var text = await resp.text();
   try { return JSON.parse(text); }
-  catch(e) {
-    // GASがHTMLを返した場合（リダイレクトページ等）
-    // doPost経由でJSONが返るはずだが、デプロイ設定が間違っている可能性
-    throw new Error('サーバーからの応答が不正です。デプロイ設定を確認してください。');
-  }
+  catch(e) { throw new Error('サーバーからの応答が不正です。デプロイを確認してください。'); }
 }
 
 function $(id){return document.getElementById(id)}
