@@ -78,6 +78,15 @@ body {
 }
 .controls input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .controls input[type="date"]:focus { border-color: var(--accent); }
+
+.view-select {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 8px 12px; border-radius: 8px;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 14px;
+  outline: none; cursor: pointer; min-width: 140px;
+}
+.view-select:focus { border-color: var(--accent); }
+
 .btn {
   background: var(--accent); color: #fff; border: none;
   padding: 8px 20px; border-radius: 8px; font-size: 14px;
@@ -225,6 +234,8 @@ tbody tr:hover { background: rgba(79,140,255,.04); }
   </div>
 
   <div class="controls">
+    <label>表示:</label>
+    <select class="view-select" id="viewAsSelect" onchange="onViewAsChange()" style="display:none"></select>
     <label>期間:</label>
     <input type="date" id="dateFrom">
     <span style="color:var(--text2)">〜</span>
@@ -273,10 +284,9 @@ tbody tr:hover { background: rgba(79,140,255,.04); }
 // ポータル JavaScript（fetch版 — GitHub Pages対応）
 // ============================================================
 
-// ★ GASウェブアプリのデプロイURL（handleJson_が受ける）
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbyWAsYrvJs4ihH046NL-tIzUBsPM7rOdm0MSdKjptR9KliR6Et0SvS_2z_egd4I7476FQ/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbyWAsYrvJsAIhH046NL-t1zUBsPM7rOdm0MSdKjpt9KliR6Et0SvS_2z_egd4I7476FQ/exec';
 
-var STATE = { id: '', token: '', data: null };
+var STATE = { id: '', token: '', data: null, viewAs: '' };
 
 window.addEventListener('DOMContentLoaded', function() {
   show('authScreen');
@@ -288,6 +298,7 @@ function doLogin() {
   if (!id || !token) { showAuthError('IDとトークンを入力してください'); return; }
   STATE.id = id;
   STATE.token = token;
+  STATE.viewAs = '';
   fetchData();
 }
 
@@ -310,6 +321,7 @@ function fetchData() {
     + '&token=' + encodeURIComponent(STATE.token);
   if (from) params += '&from=' + encodeURIComponent(from);
   if (to)   params += '&to='   + encodeURIComponent(to);
+  if (STATE.viewAs) params += '&view_as=' + encodeURIComponent(STATE.viewAs);
 
   fetch(GAS_URL + params)
     .then(function(res) { return res.json(); })
@@ -330,9 +342,16 @@ function fetchData() {
 }
 
 function reload() { fetchData(); }
+
 function resetDates() {
   document.getElementById('dateFrom').value = '';
   document.getElementById('dateTo').value = '';
+  fetchData();
+}
+
+function onViewAsChange() {
+  var sel = document.getElementById('viewAsSelect');
+  STATE.viewAs = sel.value;
   fetchData();
 }
 
@@ -350,6 +369,20 @@ function render(json) {
   document.getElementById('headerUser').textContent =
     json.staff_name + (isAdmin ? '（管理者）' : '');
 
+  // --- ドロップダウン ---
+  var sel = document.getElementById('viewAsSelect');
+  var viewable = json.viewable || [];
+  if (viewable.length > 1) {
+    sel.style.display = '';
+    sel.innerHTML = viewable.map(function(v) {
+      var selected = (v.id === json.view_as) ? ' selected' : '';
+      return '<option value="' + esc(v.id) + '"' + selected + '>' + esc(v.name) + '</option>';
+    }).join('');
+  } else {
+    sel.style.display = 'none';
+  }
+
+  // --- KPI ---
   var kpis = [
     { label: '受付数（台帳）',  value: s.total_received, unit: '件',  color: 'var(--text)',    dot: 'var(--text2)' },
     { label: '対応案件数',      value: s.total_cases,    unit: '件',  color: 'var(--accent)',  dot: 'var(--accent)' },
@@ -368,13 +401,15 @@ function render(json) {
       + '</div>';
   }).join('');
 
+  // --- Revenue ---
   var revenueItems = [
     { label: '売上合計',   value: s.revenue,      positive: true },
     { label: '広告費合計', value: s.ad_cost,      positive: false },
     { label: '粗利',       value: s.gross_profit, positive: s.gross_profit >= 0 }
   ];
 
-  if (isAdmin && json.global_summary) {
+  var isViewingAll = isAdmin && (!json.view_as || json.view_as === STATE.id);
+  if (isViewingAll && json.global_summary) {
     var gs = json.global_summary;
     var totalReward = 0;
     (gs.by_staff || []).forEach(function(st) { totalReward += st.reward; });
@@ -382,8 +417,9 @@ function render(json) {
     revenueItems.push({ label: '会社手残り', value: gs.gross_profit - totalReward, positive: (gs.gross_profit - totalReward) >= 0 });
   } else {
     var myReward = 0;
+    var viewTarget = json.view_as || STATE.id;
     (s.by_staff || []).forEach(function(st) {
-      if (st.staff_id === STATE.id) myReward = st.reward;
+      if (st.staff_id === viewTarget) myReward = st.reward;
     });
     revenueItems.push({ label: '報酬見込み', value: myReward, positive: true });
   }
@@ -396,6 +432,7 @@ function render(json) {
       + '</div>';
   }).join('');
 
+  // --- Staff Table (admin only) ---
   var staffSection = document.getElementById('staffSection');
   if (isAdmin && json.global_summary && json.global_summary.by_staff) {
     staffSection.style.display = '';
@@ -418,6 +455,7 @@ function render(json) {
     staffSection.style.display = 'none';
   }
 
+  // --- Case Table ---
   var caseRows = (json.rows || []).slice().reverse().slice(0, 100);
   document.getElementById('caseBody').innerHTML = caseRows.length ? caseRows.map(function(r) {
     return '<tr>'
