@@ -316,6 +316,7 @@ function renderWeeksHTML(weeks,full,refByWeek){var html='';
 function handleErr(msg){msg=msg||'エラー';if(msg.indexOf('再ログイン')!==-1||msg.indexOf('セッション')!==-1||msg.indexOf('期限')!==-1){toast(msg);setTimeout(resetLogin,1200);return}$('appErr').textContent=msg}
 function resetLogin(){token='';currentData=null;isAdmin=false;myStaffId='';viewStaffId='';activeTab='own';$('pin').value='';$('appView').style.display='none';$('loginView').style.display='flex';$('loginErr').classList.remove('on');$('appErr').textContent='';$('weeksArea').innerHTML='';$('summaryArea').innerHTML='';$('tabBar').innerHTML='';$('adminSelect').style.display='none'}
 </script>
+<style>.topbar { padding-right: 64px; }</style>
 <script src="https://nihonrinobe-create.github.io/shared-nav.js"></script>
 </body>
 </html>
