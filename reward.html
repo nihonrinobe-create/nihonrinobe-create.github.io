@@ -32,7 +32,7 @@
 
 .tabs{display:flex;gap:2px;margin-bottom:14px;background:var(--border);border-radius:var(--r);padding:3px;overflow-x:auto}.tab{flex:1;min-width:0;padding:8px 12px;font-size:.78rem;font-weight:600;text-align:center;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:7px;transition:all .2s;white-space:nowrap}.tab.active{background:var(--card);color:var(--accent);box-shadow:var(--shadow)}.tab:hover:not(.active){color:var(--text2)}
 
-.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}.scard{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:12px;box-shadow:var(--shadow)}.scard .sl{font-size:.65rem;color:var(--muted);font-weight:500;margin-bottom:3px}.scard .sv{font-size:1.1rem;font-weight:700}
+.summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;margin-bottom:14px}.scard{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:12px;box-shadow:var(--shadow)}.scard .sl{font-size:.65rem;color:var(--muted);font-weight:500;margin-bottom:3px}.scard .sv{font-size:1.1rem;font-weight:700}
 
 .week{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);animation:fadeUp .3s ease both}
 .week-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--hdr2);color:var(--inv)}.week-hdr h3{font-size:.82rem;font-weight:600}.week-tf{font-size:1.05rem;font-weight:700}.week-tf .lb{font-size:.65rem;font-weight:400;opacity:.5;margin-right:5px}
@@ -73,7 +73,7 @@ table{width:100%;border-collapse:collapse;font-size:.78rem}thead th{background:#
 
 <script>
 // ★★★ ここにGASのWebアプリURLを貼る ★★★
-var GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyX6aH_48g_SNMYlrcTWcUAG3LA--YmibrDNDId6RSWtBCR53kKbaH4qwH4qdFSZd-7lg/exec';
+var GAS_API_URL = 'https://script.google.com/macros/s/ここにデプロイIDを貼る/exec';
 
 var token='',busy=false,seq=0,latest=0,ua=navigator.userAgent||'';
 var currentData=null,activeTab='own',isAdmin=false,myStaffId='',viewStaffId='';
@@ -143,7 +143,7 @@ async function reload(){
     currentData.weeks=r.weeks;currentData.referrees=r.referrees;currentData.referralReward=r.referralReward;
     if(r.viewStaffId)viewStaffId=r.viewStaffId;
     $('startDate').value=r.startDate;updateDateRange(r.startDate);
-    if(activeTab==='own')renderOwn();else if(activeTab==='ref')renderRef();
+    if(activeTab==='own')renderOwn();
   }catch(e){if(s!==latest)return;$('loading').classList.remove('on');setBusy(false);handleErr(e.message)}
 }
 
@@ -157,7 +157,7 @@ async function loadReferreeDetail(refId){
     if(s!==latest)return;$('loading').classList.remove('on');setBusy(false);
     if(!r||!r.ok){handleErr(r&&r.error);return}
     $('summaryArea').innerHTML='<div class="scard" style="grid-column:span 4"><div class="sl">被紹介者</div><div class="sv">'+esc(r.refName)+'の明細</div></div>';
-    $('weeksArea').innerHTML=r.weeks?renderWeeksHTML(r.weeks,false):'<div class="empty-w">データなし</div>';
+    $('weeksArea').innerHTML=r.weeks?renderWeeksHTML(r.weeks,true,null):'<div class="empty-w">データなし</div>';
   }catch(e){if(s!==latest)return;$('loading').classList.remove('on');setBusy(false);handleErr(e.message)}
 }
 
@@ -174,47 +174,64 @@ function updateDateRange(start){if(!start)return;var s=new Date(start),e=new Dat
 
 function buildTabs(){var bar=$('tabBar');bar.innerHTML='';
   bar.appendChild(mkTab('own','自分の報酬'));
-  if((currentData.referrees&&currentData.referrees.length)||isAdmin)bar.appendChild(mkTab('ref','紹介者報酬'));
-  if(currentData.referrees)currentData.referrees.forEach(function(r){bar.appendChild(mkTab('detail_'+r.staffId,r.name+'の明細'))});
+  if(currentData.referrees&&currentData.referrees.length)currentData.referrees.forEach(function(r){bar.appendChild(mkTab('detail_'+r.staffId,r.name+'の明細'))});
   activateTab('own')}
 
 function mkTab(id,label){var b=document.createElement('button');b.className='tab';b.textContent=label;b.dataset.tab=id;b.onclick=function(){activateTab(id)};return b}
 function activateTab(id){activeTab=id;document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===id)});
-  if(id==='own')renderOwn();else if(id==='ref')renderRef();else if(id.indexOf('detail_')===0)loadReferreeDetail(id.replace('detail_',''))}
+  if(id==='own')renderOwn();else if(id.indexOf('detail_')===0)loadReferreeDetail(id.replace('detail_',''))}
 
 function renderOwn(){
   if(!currentData||!currentData.weeks){$('weeksArea').innerHTML='<div class="empty-w">データがありません</div>';$('summaryArea').innerHTML='';return}
   var weeks=currentData.weeks,tT=0,tS=0,tA=0,tR=0;
   weeks.forEach(function(w){tT+=w.transferAmount;tS+=w.totals.sales;tA+=w.totals.adCost;tR+=w.totals.reward});
-  $('summaryArea').innerHTML='<div class="scard"><div class="sl">4週合計 振込</div><div class="sv mono" style="color:var(--text)">'+yen(tT)+'</div></div>'
-    +'<div class="scard"><div class="sl">売上合計</div><div class="sv mono" style="color:var(--green)">'+yen(tS)+'</div></div>'
-    +'<div class="scard"><div class="sl">広告費合計</div><div class="sv mono" style="color:var(--amber)">'+yen(tA)+'</div></div>'
-    +'<div class="scard"><div class="sl">報酬合計</div><div class="sv mono" style="color:var(--text)">'+yen(tR)+'</div></div>';
-  $('weeksArea').innerHTML=renderWeeksHTML(weeks,true)}
+  var rr=currentData.referralReward,refTotal=rr?rr.total:0;
+  var hasRef=refTotal>0||(currentData.referrees&&currentData.referrees.length>0);
 
-function renderRef(){
-  var rr=currentData.referralReward;if(!rr){$('summaryArea').innerHTML='';$('weeksArea').innerHTML='<div class="empty-w">紹介者報酬はありません</div>';return}
-  $('summaryArea').innerHTML='<div class="scard"><div class="sl">紹介者報酬合計（4週）</div><div class="sv mono" style="color:var(--green)">'+yen(rr.total)+'</div></div>'
-    +'<div class="scard"><div class="sl">被紹介者</div><div class="sv">'+(rr.byRef?rr.byRef.length:0)+'人</div></div><div class="scard"></div><div class="scard"></div>';
-  var html='';
-  if(rr.byRef&&rr.byRef.length){html+='<div class="week"><div class="week-hdr"><h3>紹介者報酬 内訳</h3></div><div style="overflow-x:auto"><table><thead><tr><th>被紹介者</th><th class="r">第1週</th><th class="r">第2週</th><th class="r">第3週</th><th class="r">第4週</th><th class="r">合計</th></tr></thead><tbody>';
-    rr.byRef.forEach(function(r){html+='<tr><td>'+esc(r.name)+'</td>';r.weekCounts.forEach(function(c){html+='<td class="r">'+c+'件 / '+yen(c*3000)+'</td>'});html+='<td class="r mono" style="font-weight:700">'+yen(r.total)+'</td></tr>'});
-    html+='</tbody></table></div></div>';}
-  else html='<div class="empty-w">現在紹介者報酬はありません</div>';
+  // サマリーカード
+  var sm='<div class="scard"><div class="sl">報酬合計</div><div class="sv mono">'+yen(tR)+'</div></div>';
+  if(hasRef){
+    sm+='<div class="scard"><div class="sl">紹介者報酬</div><div class="sv mono" style="color:var(--green)">'+yen(refTotal)+'</div></div>';
+    sm+='<div class="scard"><div class="sl">最終合計（振込）</div><div class="sv mono" style="color:var(--accent)">'+yen(tR+refTotal)+'</div></div>';
+  }else{
+    sm+='<div class="scard"><div class="sl">振込合計</div><div class="sv mono" style="color:var(--accent)">'+yen(tT)+'</div></div>';
+  }
+  sm+='<div class="scard"><div class="sl">売上合計</div><div class="sv mono" style="color:var(--green)">'+yen(tS)+'</div></div>';
+  sm+='<div class="scard"><div class="sl">広告費合計</div><div class="sv mono" style="color:var(--amber)">'+yen(tA)+'</div></div>';
+  $('summaryArea').innerHTML=sm;
+
+  // 週テーブル
+  var refByWeek=rr?rr.byWeek:[0,0,0,0];
+  var html=renderWeeksHTML(weeks,true,refByWeek);
+
+  // 紹介者報酬の内訳テーブル（被紹介者がいる場合のみ）
+  if(hasRef&&rr&&rr.byRef&&rr.byRef.length){
+    html+='<div class="week"><div class="week-hdr"><h3>紹介者報酬 内訳</h3><div class="week-tf"><span class="lb">合計</span><span class="mono">'+yen(refTotal)+'</span></div></div>';
+    html+='<div style="overflow-x:auto"><table><thead><tr><th>被紹介者</th><th class="r">第1週</th><th class="r">第2週</th><th class="r">第3週</th><th class="r">第4週</th><th class="r">合計</th></tr></thead><tbody>';
+    rr.byRef.forEach(function(r){html+='<tr><td>'+esc(r.name)+'</td>';r.weekCounts.forEach(function(c){html+='<td class="r mono">'+c+'件 / '+yen(c*3000)+'</td>'});html+='<td class="r mono" style="font-weight:700">'+yen(r.total)+'</td></tr>'});
+    html+='</tbody></table></div></div>';
+  }
+
   $('weeksArea').innerHTML=html}
 
-function renderWeeksHTML(weeks,full){var html='';
+function renderWeeksHTML(weeks,full,refByWeek){var html='';
   weeks.forEach(function(w,i){var ws=fmtMD(w.weekStart),we=fmtMD(w.weekEnd);var d0=w.days[0],d6=w.days[6];
-    html+='<div class="week" style="animation-delay:'+(i*0.04)+'s"><div class="week-hdr"><h3>第'+(i+1)+'週　'+ws+'（'+(d0?d0.dow:'')+'）〜'+we+'（'+(d6?d6.dow:'')+'）</h3><div class="week-tf"><span class="lb">振込</span><span class="mono">'+yen(w.transferAmount)+'</span></div></div>';
-    if(w.totals.count===0&&w.transferAmount===0){html+='<div class="empty-w">この週のデータはまだありません</div></div>';return}
+    var refAmt=(refByWeek&&refByWeek[i])?refByWeek[i]:0;
+    html+='<div class="week" style="animation-delay:'+(i*0.04)+'s"><div class="week-hdr"><h3>第'+(i+1)+'週　'+ws+'（'+(d0?d0.dow:'')+'）〜'+we+'（'+(d6?d6.dow:'')+'）</h3><div class="week-tf">';
+    if(refAmt){html+='<span class="lb">報酬</span><span class="mono">'+yen(w.transferAmount)+'</span>'
+      +'<span style="opacity:.4;margin:0 6px">+</span><span class="lb">紹介</span><span class="mono">'+yen(refAmt)+'</span>'
+      +'<span style="opacity:.4;margin:0 6px">=</span><span class="lb">合計</span><span class="mono">'+yen(w.transferAmount+refAmt)+'</span>';}
+    else{html+='<span class="lb">振込</span><span class="mono">'+yen(w.transferAmount)+'</span>';}
+    html+='</div></div>';
+    if(w.totals.count===0&&w.transferAmount===0&&!refAmt){html+='<div class="empty-w">この週のデータはまだありません</div></div>';return}
     html+='<div style="overflow-x:auto"><table><thead><tr><th>日付</th><th>件数</th><th class="r">売上</th><th class="r">広告費</th>';
-    if(full)html+='<th class="r hide-sm">手数料</th><th class="r hide-sm">本体代</th><th class="r hide-sm">伝票代</th>';
+    if(full)html+='<th class="r hide-sm">手数料</th><th class="r hide-sm">CO費用</th><th class="r hide-sm">本体代</th><th class="r hide-sm">伝票代</th>';
     html+='<th class="r">報酬</th></tr></thead><tbody>';
     w.days.forEach(function(d){html+='<tr><td>'+fmtMD(d.date)+'（'+esc(d.dow)+'）</td><td>'+d.count+'</td><td class="r mono">'+yen(d.sales)+'</td><td class="r mono">'+yen(d.adCost)+'</td>';
-      if(full)html+='<td class="r mono hide-sm">'+yen(d.cardFee)+'</td><td class="r mono hide-sm">'+yen(d.honntai)+'</td><td class="r mono hide-sm">'+yen(d.slipCost)+'</td>';
+      if(full)html+='<td class="r mono hide-sm">'+yen(d.cardFee)+'</td><td class="r mono hide-sm">'+yen(d.coFee||0)+'</td><td class="r mono hide-sm">'+yen(d.honntai)+'</td><td class="r mono hide-sm">'+yen(d.slipCost)+'</td>';
       html+='<td class="r">'+colorVal(d.reward)+'</td></tr>'});
     var t=w.totals;html+='<tr class="total-row"><td>合計</td><td>'+t.count+'</td><td class="r mono">'+yen(t.sales)+'</td><td class="r mono">'+yen(t.adCost)+'</td>';
-    if(full)html+='<td class="r mono hide-sm">'+yen(t.cardFee)+'</td><td class="r mono hide-sm">'+yen(t.honntai)+'</td><td class="r mono hide-sm">'+yen(t.slipCost)+'</td>';
+    if(full)html+='<td class="r mono hide-sm">'+yen(t.cardFee)+'</td><td class="r mono hide-sm">'+yen(t.coFee||0)+'</td><td class="r mono hide-sm">'+yen(t.honntai)+'</td><td class="r mono hide-sm">'+yen(t.slipCost)+'</td>';
     html+='<td class="r">'+colorVal(t.reward)+'</td></tr></tbody></table></div></div>'});return html}
 
 function handleErr(msg){msg=msg||'エラー';if(msg.indexOf('再ログイン')!==-1||msg.indexOf('セッション')!==-1||msg.indexOf('期限')!==-1){toast(msg);setTimeout(resetLogin,1200);return}$('appErr').textContent=msg}
