@@ -247,7 +247,10 @@ tbody tr:hover { background: rgba(79,140,255,.04); }
       <div class="header-logo">P</div>
       <span class="header-title">業務ポータル</span>
     </div>
-    <div class="header-user" id="headerUser">---</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="header-user" id="headerUser">---</div>
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;" onclick="doLogout()">ログアウト</button>
+    </div>
   </div>
 
   <div class="controls">
@@ -373,6 +376,16 @@ function show(id) {
   ['authScreen','loadingScreen','mainScreen'].forEach(function(s) {
     document.getElementById(s).style.display = (s === id) ? '' : 'none';
   });
+}
+
+function doLogout() {
+  STATE.id = '';
+  STATE.token = '';
+  STATE.data = null;
+  STATE.viewAs = '';
+  document.getElementById('authId').value = '';
+  document.getElementById('authToken').value = '';
+  show('authScreen');
 }
 
 function render(json) {
@@ -503,6 +516,7 @@ function statusBadge(st) {
   return '<span class="' + cls + '">' + esc(st) + '</span>';
 }
 </script>
+<style>.header { padding-right: 64px; }</style>
 <script src="https://nihonrinobe-create.github.io/shared-nav.js"></script>
 </body>
 </html>
