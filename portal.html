@@ -253,7 +253,7 @@ tbody tr:hover { background: rgba(79,140,255,.04); }
       <table>
         <thead>
           <tr>
-            <th>担当者</th><th>対応</th><th>成約</th><th>失注</th>
+            <th>担当者</th><th>受付</th><th>成約</th><th>失注</th>
             <th>電話失注</th><th>予約</th><th>成約率</th><th>売上</th>
             <th>広告費</th><th>粗利</th><th>報酬見込</th>
           </tr>
@@ -270,7 +270,7 @@ tbody tr:hover { background: rgba(79,140,255,.04); }
         <thead>
           <tr>
             <th>案件番号</th><th>日付</th><th>ステータス</th>
-            <th>お客様</th><th>機器</th><th>合計</th><th>メモ</th>
+            <th>お客様</th><th>内容</th><th>売上</th><th>備考</th>
           </tr>
         </thead>
         <tbody id="caseBody"></tbody>
@@ -280,10 +280,6 @@ tbody tr:hover { background: rgba(79,140,255,.04); }
 </div>
 
 <script>
-// ============================================================
-// ポータル JavaScript（fetch版 — GitHub Pages対応）
-// ============================================================
-
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbyWAsYrvJs4ihH046NL-tIzUBsPM7rOdm0MSdKjptR9KliR6Et0SvS_2z_egd4I7476FQ/exec';
 
 var STATE = { id: '', token: '', data: null, viewAs: '' };
@@ -308,7 +304,6 @@ function showAuthError(msg) {
   el.style.display = 'block';
 }
 
-// --- データ取得（fetch → GAS doGet ?mode=json）---
 function fetchData() {
   show('loadingScreen');
   document.getElementById('authError').style.display = 'none';
@@ -361,7 +356,6 @@ function show(id) {
   });
 }
 
-// --- レンダリング ---
 function render(json) {
   var s = json.summary;
   var isAdmin = json.is_admin;
@@ -384,14 +378,12 @@ function render(json) {
 
   // --- KPI ---
   var kpis = [
-    { label: '受付数（台帳）',  value: s.total_received, unit: '件',  color: 'var(--text)',    dot: 'var(--text2)' },
-    { label: '対応案件数',      value: s.total_cases,    unit: '件',  color: 'var(--accent)',  dot: 'var(--accent)' },
-    { label: '成約数',          value: s.seiyaku,        unit: '件',  color: 'var(--green)',   dot: 'var(--green)' },
-    { label: '失注数',          value: s.shicchu,        unit: '件',  color: 'var(--red)',     dot: 'var(--red)' },
-    { label: '電話失注数',      value: s.denwa_shicchu,  unit: '件',  color: 'var(--orange)',  dot: 'var(--orange)' },
-    { label: '成約率（対応分）',value: s.seiyaku_rate,   unit: '%',   color: 'var(--cyan)',    dot: 'var(--cyan)' },
-    { label: '成約率（全体）',  value: s.seiyaku_rate_all, unit: '%', color: 'var(--purple)',  dot: 'var(--purple)' },
-    { label: '予約・保留',      value: s.yoyaku + s.futsu, unit: '件', color: '#6b7280',       dot: '#6b7280' }
+    { label: '受付数',            value: s.total_received,   unit: '件', color: 'var(--text)',   dot: 'var(--text2)' },
+    { label: '成約数',            value: s.seiyaku,          unit: '件', color: 'var(--green)',  dot: 'var(--green)' },
+    { label: '失注数',            value: s.shicchu,          unit: '件', color: 'var(--red)',    dot: 'var(--red)' },
+    { label: '電話失注数',        value: s.denwa_shicchu,    unit: '件', color: 'var(--orange)', dot: 'var(--orange)' },
+    { label: '成約率',            value: s.seiyaku_rate_all, unit: '%',  color: 'var(--cyan)',   dot: 'var(--cyan)' },
+    { label: '予約・保留',        value: (s.yoyaku||0) + (s.futsu||0), unit: '件', color: '#6b7280', dot: '#6b7280' }
   ];
 
   document.getElementById('kpiGrid').innerHTML = kpis.map(function(k) {
@@ -439,7 +431,7 @@ function render(json) {
     document.getElementById('staffBody').innerHTML = json.global_summary.by_staff.map(function(st) {
       return '<tr>'
         + '<td><strong>' + esc(st.staff_name) + '</strong><br><span style="color:var(--text2);font-size:11px">' + esc(st.staff_id) + '</span></td>'
-        + '<td class="mono">' + st.cases + '</td>'
+        + '<td class="mono">' + st.received + '</td>'
         + '<td class="mono" style="color:var(--green)">' + st.seiyaku + '</td>'
         + '<td class="mono" style="color:var(--red)">' + st.shicchu + '</td>'
         + '<td class="mono" style="color:var(--orange)">' + st.denwa_shicchu + '</td>'
