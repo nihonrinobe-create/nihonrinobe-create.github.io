@@ -87,6 +87,8 @@ body {
 }
 .view-select:focus { border-color: var(--accent); }
 
+.date-row { display: flex; align-items: center; gap: 8px; }
+
 .btn {
   background: var(--accent); color: #fff; border: none;
   padding: 8px 20px; border-radius: 8px; font-size: 14px;
@@ -192,8 +194,23 @@ tbody tr:hover { background: rgba(79,140,255,.04); }
 
 @media (max-width: 640px) {
   .header { padding: 12px 16px; }
-  .controls { padding: 12px 16px; }
-  .kpi-grid { padding: 0 16px 12px; }
+  .controls {
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .controls .view-label { grid-column: 1 / -1; font-size: 13px; color: var(--text2); }
+  .controls .view-select { grid-column: 1 / -1; }
+  .controls .date-label { display: none; }
+  .controls .date-row {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .controls .date-row input[type="date"] { flex: 1; min-width: 0; }
+  .controls .btn-update { grid-column: 1 / -1; }
+  .controls .btn-reset { grid-column: 1 / -1; }
+  .kpi-grid { padding: 0 16px 12px; grid-template-columns: 1fr 1fr; }
   .section { padding: 0 16px 16px; }
   .revenue-grid { padding: 0 16px 16px; }
   .kpi-value { font-size: 22px; }
@@ -234,14 +251,16 @@ tbody tr:hover { background: rgba(79,140,255,.04); }
   </div>
 
   <div class="controls">
-    <label>表示:</label>
+    <label class="view-label">表示:</label>
     <select class="view-select" id="viewAsSelect" onchange="onViewAsChange()" style="display:none"></select>
-    <label>期間:</label>
-    <input type="date" id="dateFrom">
-    <span style="color:var(--text2)">〜</span>
-    <input type="date" id="dateTo">
-    <button class="btn" onclick="reload()">更新</button>
-    <button class="btn btn-ghost" onclick="resetDates()">全期間</button>
+    <label class="date-label">期間:</label>
+    <div class="date-row">
+      <input type="date" id="dateFrom">
+      <span style="color:var(--text2)">〜</span>
+      <input type="date" id="dateTo">
+    </div>
+    <button class="btn btn-update" onclick="reload()">更新</button>
+    <button class="btn btn-ghost btn-reset" onclick="resetDates()">全期間</button>
   </div>
 
   <div class="kpi-grid" id="kpiGrid"></div>
