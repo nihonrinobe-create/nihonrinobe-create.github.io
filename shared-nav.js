@@ -56,14 +56,14 @@
       name: '見積もり',
       sub: '見積書作成・管理',
       icon: '💰',
-      url: 'https://nihonrinobe-create.github.io/%E5%BC%95%E7%94%A8.html',
+      url: 'https://nihonrinobe-create.github.io/quote.html',
       color: '#FF9800'
     },
     {
       name: 'ポータル',
       sub: '成績・報酬確認',
       icon: '📊',
-      url: 'https://nihonrinobe-create.github.io/%E3%83%9D%E3%83%BC%E3%82%BF%E3%83%AB.html',
+      url: 'https://nihonrinobe-create.github.io/portal.html',
       color: '#9C27B0'
     },
     {
